@@ -66,7 +66,7 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   // audioVisualizerType: 'aura',
 
   // agent dispatch configuration
-  agentName: process.env.AGENT_NAME ?? 'dhanbuddy',
+  agentName: process.env.AGENT_NAME || 'dhanbuddy',
 
   // LiveKit Cloud Sandbox configuration
   sandboxId: undefined,
