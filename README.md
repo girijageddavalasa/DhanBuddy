@@ -4,9 +4,13 @@ DhanBuddy is a friendly Indian voice assistant for goal-based savings planning, 
 
 It asks one question at a time, calculates a zero-return savings estimate, and tells the user whether they are on track. It never recommends financial products or requests sensitive banking or identity details.
 
+![DhanBuddy Banner](images/banner.png)
+
 ## Voice pipeline
 
 User speech -> Deepgram Nova-3 STT -> Gemini -> deterministic savings calculator -> Murf Falcon TTS -> LiveKit
+
+Deepgram runs in multilingual mode for English, Hindi, and code-mixed speech. A small approved local knowledge retriever explains savings terms. It never performs financial calculations or product recommendations.
 
 DhanBuddy uses Murf's Anisha voice with the en-IN locale and Conversation style. This warm Indian English voice was chosen to make a personal money conversation feel familiar and approachable.
 
@@ -73,6 +77,21 @@ Open http://localhost:3000, select Talk to DhanBuddy, allow microphone access, a
 4. Post the video on LinkedIn. Mention DhanBuddy, the problem it solves, Murf Falcon as the fastest TTS API, and 10 Days of Voice Agents - VoiceForBharat Edition.
 5. Tag Murf AI and include #VoiceForBharat.
 6. Submit the LinkedIn post link using the Discord form.
+
+## Day 2: safe multilingual conversations
+
+DhanBuddy now includes:
+
+- a structured identity, objectives, knowledge boundary, language policy, guardrails, and voice style,
+- English, Hindi, and natural Hinglish mirroring,
+- explicit refusals and a safe escalation script,
+- deterministic local retrieval for approved savings explanations,
+- one silence re-prompt and a graceful close after continued inactivity,
+- short spoken replies with one question at a time,
+- red-team cases documented in [RED_TEAM.md](RED_TEAM.md),
+- a camera-ready script in [DAY2_DEMO.md](DAY2_DEMO.md).
+
+The knowledge retriever is intentionally small and auditable. Add only reviewed educational entries to `backend/src/knowledge.py`. Do not use retrieval for arithmetic, eligibility decisions, approvals, or financial-product advice.
 
 ## References
 
