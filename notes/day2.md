@@ -1,4 +1,4 @@
-Today I’m going to upgrade DhanBuddy into a safer, multilingual, voice-first savings assistant.
+upgraded DhanBuddy into a safer, multilingual, voice-first savings assistant.
 
 ## What I will build
 
