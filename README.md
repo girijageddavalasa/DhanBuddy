@@ -93,6 +93,20 @@ DhanBuddy now includes:
 
 The knowledge retriever is intentionally small and auditable. Add only reviewed educational entries to `backend/src/knowledge.py`. Do not use retrieval for arithmetic, eligibility decisions, approvals, or financial-product advice.
 
+## Day 3: personalised voice interface
+
+The frontend is now designed specifically for DhanBuddy's Financial Services track. It includes:
+
+- a custom yellow, purple, and magenta DhanBuddy identity and rupee voice logo,
+- clear Ready, Connecting, Listening, Speaking, and Call ended states,
+- an animated audio visualiser and speaker indicators for the user and DhanBuddy,
+- a microphone-permission error with simple browser recovery instructions,
+- a visible four-step savings conversation guide and privacy reminders,
+- transcript privacy controls and a Start again action after a call ends,
+- automatic call closure when the user says "bye" or "goodbye".
+
+See [DAY3_DEMO.md](DAY3_DEMO.md) for the camera-ready flow and test checklist.
+
 ## References
 
 - https://github.com/murf-ai/murf-livekit-starter

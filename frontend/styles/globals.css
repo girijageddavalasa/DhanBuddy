@@ -6,13 +6,13 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.985 0.018 95);
+  --foreground: oklch(0.22 0.09 300);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.52 0.25 295);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -23,7 +23,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.62 0.27 330);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -40,14 +40,14 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.16 0.065 300);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.269 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.75 0.2 325);
+  --primary-foreground: oklch(0.16 0.065 300);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -120,5 +120,227 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .dhan-page {
+    background:
+      radial-gradient(circle at 12% 8%, rgb(253 224 71 / 0.28), transparent 30%),
+      radial-gradient(circle at 88% 18%, rgb(217 70 239 / 0.16), transparent 28%),
+      radial-gradient(circle at 70% 88%, rgb(124 58 237 / 0.12), transparent 32%),
+      linear-gradient(145deg, #fffdf5 0%, #fbf7ff 52%, #fff8fc 100%);
+  }
+
+  .dark .dhan-page {
+    background:
+      radial-gradient(circle at 12% 8%, rgb(250 204 21 / 0.12), transparent 30%),
+      radial-gradient(circle at 88% 18%, rgb(217 70 239 / 0.16), transparent 28%),
+      radial-gradient(circle at 70% 88%, rgb(124 58 237 / 0.18), transparent 32%),
+      linear-gradient(145deg, #160d28 0%, #1d1134 52%, #21102b 100%);
+  }
+
+  .dhan-card {
+    border: 1px solid rgb(124 58 237 / 0.12);
+    border-radius: 32px;
+    background: rgb(255 255 255 / 0.82);
+    box-shadow:
+      0 28px 80px rgb(76 29 149 / 0.12),
+      inset 0 1px 0 rgb(255 255 255 / 0.8);
+    backdrop-filter: blur(22px);
+  }
+
+  .dark .dhan-card {
+    border-color: rgb(255 255 255 / 0.1);
+    background: rgb(30 18 52 / 0.78);
+    box-shadow: 0 28px 80px rgb(0 0 0 / 0.3);
+  }
+
+  .dhan-logo-wrap {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border: 1px solid rgb(124 58 237 / 0.12);
+    border-radius: 16px;
+    background: rgb(255 255 255 / 0.8);
+    box-shadow: 0 10px 28px rgb(124 58 237 / 0.12);
+  }
+
+  .dhan-gradient-text {
+    background: linear-gradient(100deg, #7c3aed 5%, #c026d3 52%, #db2777 96%);
+    background-clip: text;
+    color: transparent;
+  }
+
+  .dhan-primary-button {
+    color: white;
+    background: linear-gradient(100deg, #6d28d9, #a21caf 52%, #db2777);
+    box-shadow: 0 14px 34px rgb(192 38 211 / 0.25);
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .dhan-primary-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 42px rgb(192 38 211 / 0.34);
+  }
+
+  .dhan-primary-button:disabled {
+    transform: none;
+    opacity: 0.78;
+  }
+
+  .dhan-orbit {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(1px);
+  }
+
+  .dhan-orbit-one {
+    top: -24px;
+    right: -30px;
+    width: 130px;
+    height: 130px;
+    background: linear-gradient(135deg, rgb(253 224 71 / 0.85), rgb(245 158 11 / 0.2));
+  }
+
+  .dhan-orbit-two {
+    bottom: -32px;
+    left: -38px;
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, rgb(217 70 239 / 0.3), rgb(124 58 237 / 0.12));
+  }
+
+  .dhan-sound-dots {
+    display: flex;
+    height: 22px;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .dhan-sound-dots span {
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(#7c3aed, #db2777);
+    animation: dhan-bounce 900ms ease-in-out infinite alternate;
+  }
+
+  .dhan-sound-dots span:nth-child(1) {
+    height: 8px;
+  }
+  .dhan-sound-dots span:nth-child(2) {
+    height: 17px;
+    animation-delay: 120ms;
+  }
+  .dhan-sound-dots span:nth-child(3) {
+    height: 12px;
+    animation-delay: 240ms;
+  }
+  .dhan-sound-dots span:nth-child(4) {
+    height: 20px;
+    animation-delay: 360ms;
+  }
+
+  .dhan-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgb(255 255 255 / 0.35);
+    border-top-color: white;
+    border-radius: 999px;
+    animation: dhan-spin 700ms linear infinite;
+  }
+
+  .dhan-state-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgb(124 58 237 / 0.14);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.72);
+    padding: 8px 14px;
+    color: #5b21b6;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .dark .dhan-state-pill {
+    border-color: rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.06);
+    color: #e9d5ff;
+  }
+
+  .dhan-state-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgb(245 158 11 / 0.13);
+  }
+
+  .dhan-state-pill[data-state='listening'] .dhan-state-dot {
+    background: #10b981;
+    box-shadow: 0 0 0 4px rgb(16 185 129 / 0.13);
+  }
+
+  .dhan-state-pill[data-state='speaking'] .dhan-state-dot {
+    background: #d946ef;
+    box-shadow: 0 0 0 4px rgb(217 70 239 / 0.13);
+  }
+
+  .dhan-visualizer-shell {
+    position: relative;
+    display: grid;
+    width: 260px;
+    height: 260px;
+    place-items: center;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.9), rgb(245 243 255 / 0.55));
+  }
+
+  .dark .dhan-visualizer-shell {
+    background: radial-gradient(circle, rgb(255 255 255 / 0.1), rgb(124 58 237 / 0.05));
+  }
+
+  .dhan-visualizer-glow {
+    position: absolute;
+    inset: 18%;
+    border-radius: 999px;
+    background: rgb(217 70 239 / 0.14);
+    filter: blur(25px);
+    transition: all 300ms ease;
+  }
+
+  .dhan-visualizer-shell[data-state='speaking'] .dhan-visualizer-glow {
+    inset: 8%;
+    background: rgb(217 70 239 / 0.28);
+  }
+}
+
+@keyframes dhan-bounce {
+  from {
+    transform: scaleY(0.55);
+    opacity: 0.55;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dhan-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dhan-sound-dots span,
+  .dhan-spinner {
+    animation: none;
   }
 }

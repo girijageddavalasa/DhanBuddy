@@ -35,22 +35,25 @@
 export const APP_CONFIG_DEFAULTS: AppConfig = {
   companyName: 'DhanBuddy',
   pageTitle: 'DhanBuddy - Voice Savings Planner',
-  pageDescription:
-    'A friendly Indian savings goal assistant powered by Murf Falcon â€” the fastest TTS API',
+  pageDescription: 'A friendly Indian voice assistant that helps you understand one savings goal.',
 
   supportsChatInput: true,
   supportsVideoInput: false,
   supportsScreenShare: false,
   isPreConnectBufferEnabled: true,
 
-  logo: '/murf-logo.svg',
-  accent: '#0F766E',
-  logoDark: '/murf-logo-dark.svg',
-  accentDark: '#2DD4BF',
-  startButtonText: 'Talk to DhanBuddy',
+  logo: '/dhanbuddy-logo.svg',
+  accent: '#7C3AED',
+  logoDark: '/dhanbuddy-logo.svg',
+  accentDark: '#F0ABFC',
+  startButtonText: 'Start talking',
 
   // optional: audio visualization configuration
-  // audioVisualizerType: 'bar',
+  audioVisualizerType: 'wave',
+  audioVisualizerColor: '#D946EF',
+  audioVisualizerColorDark: '#F0ABFC',
+  audioVisualizerColorShift: 0.35,
+  audioVisualizerWaveLineWidth: 4,
   // audioVisualizerColor: '#002cf2',
   // audioVisualizerColorDark: '#1fd5f9',
   // audioVisualizerColorShift: 0.3,

@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bubble" x1="8" y1="7" x2="57" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="21" y1="17" x2="44" y2="43" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDE047"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <path d="M9 13C9 8.582 12.582 5 17 5H47C51.418 5 55 8.582 55 13V39C55 43.418 51.418 47 47 47H35L22 58V47H17C12.582 47 9 43.418 9 39V13Z" fill="url(#bubble)"/>
+  <circle cx="32" cy="26" r="14" fill="url(#coin)"/>
+  <path d="M26 19H39M26 23H39M30 19C35 19 37 21 37 24C37 27 34.5 29 30 29H27L37 38" stroke="#4C1D95" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

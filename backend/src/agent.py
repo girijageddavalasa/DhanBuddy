@@ -8,6 +8,7 @@ from livekit.agents import (
     Agent,
     AgentServer,
     AgentSession,
+    ConversationItemAddedEvent,
     JobContext,
     JobProcess,
     UserStateChangedEvent,
@@ -72,6 +73,10 @@ SILENCE_REPROMPT = "Are you still there? Please tell me what you are saving for.
 SILENCE_CLOSE = (
     "It looks like now may not be a good time. Return whenever you are ready to "
     "plan your savings goal. Goodbye!"
+)
+GOODBYE_MESSAGE = (
+    "Thank you for using DhanBuddy. Return whenever you want to plan another "
+    "savings goal. Goodbye!"
 )
 
 
@@ -171,6 +176,39 @@ def setup_inactivity_handler(session: AgentSession) -> None:
             inactivity_task = None
 
 
+def setup_goodbye_handler(session: AgentSession) -> None:
+    """End the call when the user clearly says goodbye."""
+    closing = False
+    closing_task: asyncio.Task[None] | None = None
+    goodbye_phrases = {
+        "bye",
+        "bye bye",
+        "goodbye",
+        "good bye",
+        "call end",
+        "end call",
+        "alvida",
+        "thank you bye",
+        "thanks bye",
+    }
+
+    async def close_call() -> None:
+        await session.interrupt(force=True)
+        await session.say(GOODBYE_MESSAGE, allow_interruptions=False)
+        session.shutdown(drain=True)
+
+    @session.on("conversation_item_added")
+    def on_conversation_item_added(event: ConversationItemAddedEvent) -> None:
+        nonlocal closing, closing_task
+        item = event.item
+        if item.type != "message" or item.role != "user" or closing:
+            return
+        transcript = (item.text_content or "").casefold().strip(" .,!?")
+        if transcript in goodbye_phrases:
+            closing = True
+            closing_task = asyncio.create_task(close_call())
+
+
 server = AgentServer()
 
 
@@ -218,6 +256,7 @@ async def my_agent(ctx: JobContext):
     )
 
     setup_inactivity_handler(session)
+    setup_goodbye_handler(session)
 
     # To use a realtime model instead of a voice pipeline, use the following session setup instead.
     # (Note: This is for the OpenAI Realtime API. For other providers, see https://docs.livekit.io/agents/models/realtime/))
