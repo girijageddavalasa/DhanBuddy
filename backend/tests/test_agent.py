@@ -6,6 +6,7 @@ from agent import (
     SILENCE_REPROMPT,
     SYSTEM_PROMPT,
     calculate_plan,
+    has_explicit_consent,
 )
 from knowledge import retrieve_knowledge
 
@@ -63,6 +64,14 @@ def test_prompt_has_required_structure(section: str) -> None:
 def test_prompt_supports_code_mixed_language() -> None:
     assert "natural Hinglish to Hinglish" in SYSTEM_PROMPT
     assert "If the user changes language, change with them" in SYSTEM_PROMPT
+    assert "Hindi must use Devanagari" in SYSTEM_PROMPT
+
+
+def test_memory_requires_explicit_consent() -> None:
+    assert has_explicit_consent("yes") is True
+    assert has_explicit_consent("हाँ") is True
+    assert has_explicit_consent("maybe later") is False
+    assert has_explicit_consent("") is False
 
 
 def test_voice_messages_are_short_plain_text() -> None:

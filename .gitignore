@@ -3,3 +3,4 @@
 !.env.example
 .DS_Store
 frontend/dev-ui*.log
+backend/data/*.db*

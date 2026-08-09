@@ -673,3 +673,77 @@
     border-radius: 24px;
   }
 }
+
+/* Day 4: restrained, professional financial-service theme. */
+.dhan-page,
+.dark .dhan-page {
+  background: #f6f7f9;
+}
+
+.dark .dhan-page {
+  background: #101114;
+}
+
+.dhan-card,
+.dhan-live-header,
+.dhan-journey-rail,
+.dhan-conversation-stage,
+.dhan-voice-orbit,
+.dhan-pipeline-card {
+  border-color: #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgb(15 23 42 / 6%);
+  backdrop-filter: none;
+}
+
+.dark .dhan-card,
+.dark .dhan-live-header,
+.dark .dhan-journey-rail,
+.dark .dhan-conversation-stage,
+.dark .dhan-voice-orbit,
+.dark .dhan-pipeline-card {
+  border-color: #2b2d33;
+  background: #18191d;
+  box-shadow: none;
+}
+
+.dhan-gradient-text {
+  background: none;
+  color: #3f2a78;
+}
+
+.dark .dhan-gradient-text {
+  color: #ede9fe;
+}
+
+.dhan-primary-button {
+  background: #5b3fa3;
+  box-shadow: 0 10px 24px rgb(91 63 163 / 18%);
+}
+
+.dhan-primary-button:hover {
+  background: #4c338d;
+  box-shadow: 0 12px 28px rgb(91 63 163 / 22%);
+}
+
+.dhan-orbit {
+  display: none;
+}
+
+.dhan-flowing-transcript {
+  background-image: none;
+}
+
+.dhan-memory-card {
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #5b3fa3;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.dark .dhan-memory-card {
+  border-color: #2b2d33;
+  border-left-color: #a78bfa;
+  background: #18191d;
+}

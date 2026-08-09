@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from dataclasses import asdict, dataclass
 
 from dotenv import load_dotenv
@@ -21,6 +22,12 @@ from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from knowledge import retrieve_knowledge
+from memory import (
+    delete_caller_profile,
+    get_caller_profile,
+    profile_as_dict,
+    save_caller_profile,
+)
 
 logger = logging.getLogger("agent")
 
@@ -46,6 +53,15 @@ Accept Indian number formats such as fifty thousand rupees, five lakhs, and one 
 
 # LANGUAGE
 Mirror the user's language and register. Reply in English to English, Hindi to Hindi, and natural Hinglish to Hinglish. Keep common words like target, deadline, and monthly savings in English when the user does. If the user changes language, change with them. Do not translate amounts incorrectly. If you cannot understand, ask one short clarifying question in the same apparent language.
+
+Always write every non-English language in its own native script. Hindi must use Devanagari such as नमस्ते, never romanized Hindi such as namaste. Telugu must use Telugu script, Tamil must use Tamil script, Kannada must use Kannada script, and Malayalam must use Malayalam script. Apply the same rule to every other non-English language. Use Romanized text only when the user explicitly asks for transliteration.
+
+# MEMORY
+At the start of every call, call lookup_caller before greeting the caller. Never guess whether the caller is new or returning. If a profile exists, greet the caller by name, briefly mention their saved savings goal, and ask whether they want to continue it. If no profile exists, introduce yourself and ask what they are saving for.
+
+Memory is optional. Before calling save_caller_memory, explicitly tell the caller which fields you want to remember and ask for permission. Save only after their latest answer is a clear yes. Pass their exact consent reply to the tool. Silence, uncertainty, or an unrelated answer is not consent. If they say no, do not call the save tool and continue without memory.
+
+Only remember name, language preference, savings goal, target amount, target deadline, amount already saved, and monthly saving capacity. Never save sensitive identifiers or credentials. When a caller asks to be forgotten, explain that deletion is permanent, ask for confirmation, and call forget_caller only after a clear yes.
 
 # GUARDRAILS
 Your only job is goal-based savings planning and basic explanations from the approved knowledge tool.
@@ -112,9 +128,112 @@ def calculate_plan(
     )
 
 
+EXPLICIT_CONSENT = {
+    "yes",
+    "yes please",
+    "i agree",
+    "you can save it",
+    "save it",
+    "हाँ",
+    "हां",
+    "जी हाँ",
+    "అవును",
+    "ஆம்",
+    "ಹೌದು",
+    "അതെ",
+}
+SENSITIVE_PATTERN = re.compile(
+    r"\b(?:otp|pin|cvv|aadhaar|aadhar|account\s*number|card\s*number|password)\b",
+    re.IGNORECASE,
+)
+
+
+def has_explicit_consent(reply: str) -> bool:
+    return reply.casefold().strip(" .,!?") in EXPLICIT_CONSENT
+
+
 class Assistant(Agent):
-    def __init__(self) -> None:
+    def __init__(self, caller_id: str) -> None:
+        self.caller_id = caller_id
         super().__init__(instructions=SYSTEM_PROMPT)
+
+    @function_tool
+    async def lookup_caller(self) -> dict[str, object]:
+        """Look up the current caller's saved profile. Call this before greeting."""
+        profile = await asyncio.to_thread(get_caller_profile, self.caller_id)
+        if profile is None:
+            return {"found": False, "message": "No saved profile for this caller."}
+        return {"found": True, "profile": profile_as_dict(profile)}
+
+    @function_tool
+    async def save_caller_memory(
+        self,
+        name: str,
+        language_preference: str,
+        savings_goal: str,
+        target_amount: float | None,
+        target_deadline: str,
+        already_saved: float | None,
+        monthly_saving: float | None,
+        consent_confirmation: str,
+    ) -> dict[str, object]:
+        """Save approved caller facts after the caller explicitly consents.
+
+        Args:
+            name: The caller's preferred name.
+            language_preference: The language the caller prefers.
+            savings_goal: What the caller is saving for.
+            target_amount: Goal amount in rupees, if known.
+            target_deadline: The caller's stated target date or duration.
+            already_saved: Amount already saved, if known.
+            monthly_saving: Monthly saving capacity, if known.
+            consent_confirmation: The caller's exact latest reply to the consent question.
+        """
+        if not has_explicit_consent(consent_confirmation):
+            return {
+                "saved": False,
+                "reason": "Explicit consent was not confirmed. Do not save anything.",
+            }
+        text_values = " ".join(
+            (name, language_preference, savings_goal, target_deadline)
+        )
+        if SENSITIVE_PATTERN.search(text_values):
+            return {
+                "saved": False,
+                "reason": "Sensitive financial or identity information cannot be stored.",
+            }
+        if not name.strip() or len(name.strip()) > 80:
+            return {"saved": False, "reason": "A short preferred name is required."}
+        facts = {
+            "savings_goal": savings_goal.strip(),
+            "target_amount": target_amount,
+            "target_deadline": target_deadline.strip(),
+            "already_saved": already_saved,
+            "monthly_saving": monthly_saving,
+        }
+        profile = await asyncio.to_thread(
+            save_caller_profile,
+            self.caller_id,
+            name,
+            language_preference,
+            facts,
+        )
+        return {"saved": True, "profile": profile_as_dict(profile)}
+
+    @function_tool
+    async def forget_caller(self, confirmation: str) -> dict[str, object]:
+        """Permanently delete caller memory after explicit confirmation.
+
+        Args:
+            confirmation: The caller's exact latest reply confirming deletion.
+        """
+        if not has_explicit_consent(confirmation):
+            return {
+                "deleted": False,
+                "reason": "Permanent deletion was not explicitly confirmed.",
+            }
+        deleted = await asyncio.to_thread(delete_caller_profile, self.caller_id)
+        return {"deleted": deleted}
 
     @function_tool
     async def calculate_savings_plan(
@@ -276,9 +395,19 @@ async def my_agent(ctx: JobContext):
     # # Start the avatar and wait for it to join
     # await avatar.start(session, room=ctx.room)
 
+    await ctx.connect()
+    caller_id = next(
+        (
+            participant.identity
+            for participant in ctx.room.remote_participants.values()
+            if participant.identity.startswith("caller_")
+        ),
+        f"anonymous_{ctx.room.name}",
+    )
+
     # Start the session, which initializes the voice pipeline and warms up the models
     await session.start(
-        agent=Assistant(),
+        agent=Assistant(caller_id),
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
@@ -292,10 +421,13 @@ async def my_agent(ctx: JobContext):
         ),
     )
 
-    # Join the room and connect to the user
-    await ctx.connect()
-
-    await session.say(FIRST_TURN_GREETING, allow_interruptions=True)
+    await session.generate_reply(
+        instructions=(
+            "Call lookup_caller now. Then greet the caller using only the tool result. "
+            "For a new caller, use the normal DhanBuddy introduction and ask one goal question."
+        ),
+        allow_interruptions=True,
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,66 @@
+[
+  {
+    "title": "Savings",
+    "keywords": ["saving", "savings", "bachat", "बचत"],
+    "explanation": "Savings are the part of income left after expenses and set aside for future needs or goals.",
+    "source_name": "SEBI Financial Education Booklet",
+    "source_url": "https://investor.sebi.gov.in/pdf/downloadable-documents/Financial%20Education%20Booklet%20-%20English.pdf",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Financial goal and budgeting",
+    "keywords": ["budget", "budgeting", "financial goal", "goal", "खर्च", "लक्ष्य"],
+    "explanation": "A financial goal gives savings a specific purpose and amount. A budget helps plan income, expenses, and regular savings toward it.",
+    "source_name": "SEBI Money Matters",
+    "source_url": "https://investor.sebi.gov.in/moneymatters.html",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Emergency savings",
+    "keywords": ["emergency fund", "emergency savings", "unexpected expense", "आपातकालीन"],
+    "explanation": "Emergency savings are money kept aside for unexpected essential expenses. DhanBuddy does not recommend a particular account or product.",
+    "source_name": "SEBI Money Matters",
+    "source_url": "https://investor.sebi.gov.in/moneymatters.html",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Safe financial behaviour",
+    "keywords": ["fraud", "otp", "pin", "password", "safe banking", "scam", "धोखाधड़ी"],
+    "explanation": "Protect confidential credentials, use official channels, and do not act on unverified promises or requests for sensitive banking information.",
+    "source_name": "RBI Financial Awareness Messages",
+    "source_url": "https://www.rbi.org.in/commonperson/English/Scripts/PressReleases.aspx?Id=2123",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Educational estimate",
+    "keywords": ["educational estimate", "estimate", "advice", "return"],
+    "explanation": "DhanBuddy's estimate uses the amounts and deadline provided by the caller, assumes no investment returns, and is not personalised financial advice.",
+    "source_name": "DhanBuddy calculation policy",
+    "source_url": "local://dhanbuddy/calculation-policy",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Monthly shortfall",
+    "keywords": ["shortfall", "monthly gap", "gap", "कमी"],
+    "explanation": "A monthly shortfall is the additional amount that would need to be saved each month to reach the stated target by the deadline.",
+    "source_name": "DhanBuddy calculation policy",
+    "source_url": "local://dhanbuddy/calculation-policy",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Monthly surplus",
+    "keywords": ["surplus", "extra", "more than required", "अधिक"],
+    "explanation": "A monthly surplus means the planned monthly saving is above the estimated monthly amount required for the goal.",
+    "source_name": "DhanBuddy calculation policy",
+    "source_url": "local://dhanbuddy/calculation-policy",
+    "reviewed_on": "2026-08-09"
+  },
+  {
+    "title": "Deadline extension",
+    "keywords": ["extend", "extension", "deadline", "more time", "समय"],
+    "explanation": "A longer deadline provides more monthly saving periods and can reduce the estimated amount required each month.",
+    "source_name": "DhanBuddy calculation policy",
+    "source_url": "local://dhanbuddy/calculation-policy",
+    "reviewed_on": "2026-08-09"
+  }
+]

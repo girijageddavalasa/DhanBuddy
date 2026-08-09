@@ -107,6 +107,18 @@ The frontend is now designed specifically for DhanBuddy's Financial Services tra
 
 See [DAY3_DEMO.md](DAY3_DEMO.md) for the camera-ready flow and test checklist.
 
+## Day 4: persistent, consent-based memory
+
+DhanBuddy now recognises a returning browser using a random anonymous caller ID
+and stores approved profile facts in SQLite. The agent reads and writes memory only
+through `lookup_caller`, `save_caller_memory`, and `forget_caller` tools. Saving and
+permanent deletion both require explicit caller confirmation.
+
+The database is created at `backend/data/dhanbuddy.db` and is intentionally ignored
+by Git. The approved official-source knowledge library lives in `backend/rag/`.
+See [notes/day4.md](notes/day4.md) for implementation details and
+[DAY4_DEMO.md](DAY4_DEMO.md) for the restart, refusal, and forget-me demonstrations.
+
 ## References
 
 - https://github.com/murf-ai/murf-livekit-starter

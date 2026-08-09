@@ -348,11 +348,16 @@ export function AgentSessionView_01({
               </div>
             </div>
 
-            <div className="rounded-[28px] bg-gradient-to-br from-fuchsia-600 to-violet-800 p-5 text-white sm:col-span-2 xl:col-span-1">
-              <Sparkles className="size-4 text-yellow-300" />
-              <p className="mt-3 text-sm font-black">Simple maths. No promises.</p>
-              <p className="mt-1.5 text-[11px] leading-5 text-white/70">
-                Educational estimate only. No returns or financial products assumed.
+            <div className="dhan-memory-card sm:col-span-2 xl:col-span-1">
+              <div className="flex items-center gap-2">
+                <LockKeyhole className="size-4 text-violet-700 dark:text-violet-300" />
+                <p className="text-xs font-black text-violet-950 dark:text-white">
+                  Memory is consent-only
+                </p>
+              </div>
+              <p className="mt-2 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+                DhanBuddy asks before remembering your name or savings plan. Say “forget me” to
+                remove saved data.
               </p>
             </div>
           </aside>
