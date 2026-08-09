@@ -85,7 +85,7 @@ FIRST_TURN_GREETING = (
     "Namaste! I'm DhanBuddy. I can help you check whether your monthly savings "
     "can reach one financial goal. What are you saving for?"
 )
-SILENCE_REPROMPT = "Are you still there? Please tell me what you are saving for."
+SILENCE_REPROMPT = "Are you still there? Please continue whenever you are ready."
 SILENCE_CLOSE = (
     "It looks like now may not be a good time. Return whenever you are ready to "
     "plan your savings goal. Goodbye!"
@@ -275,10 +275,13 @@ class Assistant(Agent):
 def setup_inactivity_handler(session: AgentSession) -> None:
     """Re-prompt once after silence, then close gracefully after no response."""
     inactivity_task: asyncio.Task[None] | None = None
+    reprompt_used = False
 
     async def check_if_user_present() -> None:
+        nonlocal reprompt_used
+        reprompt_used = True
         await session.say(SILENCE_REPROMPT, allow_interruptions=True)
-        await asyncio.sleep(10)
+        await asyncio.sleep(15)
         await session.say(SILENCE_CLOSE, allow_interruptions=False)
         session.shutdown(drain=True)
 
@@ -286,7 +289,9 @@ def setup_inactivity_handler(session: AgentSession) -> None:
     def on_user_state_changed(event: UserStateChangedEvent) -> None:
         nonlocal inactivity_task
         if event.new_state == "away":
-            if inactivity_task is None or inactivity_task.done():
+            if not reprompt_used and (
+                inactivity_task is None or inactivity_task.done()
+            ):
                 inactivity_task = asyncio.create_task(check_if_user_present())
             return
 
@@ -371,7 +376,7 @@ async def my_agent(ctx: JobContext):
         # allow the LLM to generate a response while waiting for the end of turn
         # See more at https://docs.livekit.io/agents/build/audio/#preemptive-generation
         preemptive_generation=True,
-        user_away_timeout=8.0,
+        user_away_timeout=20.0,
     )
 
     setup_inactivity_handler(session)
@@ -421,7 +426,7 @@ async def my_agent(ctx: JobContext):
         ),
     )
 
-    await session.generate_reply(
+    session.generate_reply(
         instructions=(
             "Call lookup_caller now. Then greet the caller using only the tool result. "
             "For a new caller, use the normal DhanBuddy introduction and ask one goal question."
