@@ -74,6 +74,10 @@ def test_memory_requires_explicit_consent() -> None:
     assert has_explicit_consent("") is False
 
 
+def test_memory_lookup_waits_for_a_real_user_turn() -> None:
+    assert "On the caller's first turn, call lookup_caller" in SYSTEM_PROMPT
+
+
 def test_voice_messages_are_short_plain_text() -> None:
     assert FIRST_TURN_GREETING.startswith("Namaste! I'm DhanBuddy.")
     assert "?" in FIRST_TURN_GREETING

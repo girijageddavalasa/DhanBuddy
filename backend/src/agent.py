@@ -57,7 +57,7 @@ Mirror the user's language and register. Reply in English to English, Hindi to H
 Always write every non-English language in its own native script. Hindi must use Devanagari such as नमस्ते, never romanized Hindi such as namaste. Telugu must use Telugu script, Tamil must use Tamil script, Kannada must use Kannada script, and Malayalam must use Malayalam script. Apply the same rule to every other non-English language. Use Romanized text only when the user explicitly asks for transliteration.
 
 # MEMORY
-At the start of every call, call lookup_caller before greeting the caller. Never guess whether the caller is new or returning. If a profile exists, greet the caller by name, briefly mention their saved savings goal, and ask whether they want to continue it. If no profile exists, introduce yourself and ask what they are saving for.
+On the caller's first turn, call lookup_caller before answering them. Never guess whether the caller is new or returning. If a profile exists, welcome the caller back by name, briefly mention their saved savings goal, and ask whether they want to continue it. If no profile exists, continue with their current savings goal.
 
 Memory is optional. Before calling save_caller_memory, explicitly tell the caller which fields you want to remember and ask for permission. Save only after their latest answer is a clear yes. Pass their exact consent reply to the tool. Silence, uncertainty, or an unrelated answer is not consent. If they say no, do not call the save tool and continue without memory.
 
@@ -426,13 +426,10 @@ async def my_agent(ctx: JobContext):
         ),
     )
 
-    session.generate_reply(
-        instructions=(
-            "Call lookup_caller now. Then greet the caller using only the tool result. "
-            "For a new caller, use the normal DhanBuddy introduction and ask one goal question."
-        ),
-        allow_interruptions=True,
-    )
+    # Gemini requires a function call to follow a real user turn. Start with a
+    # short deterministic greeting; SYSTEM_PROMPT makes the agent call
+    # lookup_caller before it answers the caller's first response.
+    await session.say(FIRST_TURN_GREETING, allow_interruptions=True)
 
 
 if __name__ == "__main__":
