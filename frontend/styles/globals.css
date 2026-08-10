@@ -809,3 +809,69 @@
   color: #64748b;
   font-size: 10px;
 }
+
+.dhan-tool-monitor {
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #fff;
+  padding: 0.9rem;
+}
+
+.dark .dhan-tool-monitor {
+  border-color: #26364b;
+  background: #18191d;
+}
+
+.dhan-tool-event {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 11px;
+  background: #f8fafc;
+  padding: 0.55rem 0.65rem;
+}
+
+.dark .dhan-tool-event {
+  background: #222329;
+}
+
+.dhan-tool-event-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #64748b;
+}
+
+.dhan-tool-event[data-status='running'] .dhan-tool-event-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgb(245 158 11 / 12%);
+  animation: dhan-pulse 1.2s ease-in-out infinite;
+}
+
+.dhan-tool-event[data-status='completed'] .dhan-tool-event-dot {
+  background: #10b981;
+}
+
+.dhan-tool-event[data-status='failed'] .dhan-tool-event-dot {
+  background: #e11d48;
+}
+
+.dhan-tool-event p {
+  color: #334155;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dark .dhan-tool-event p {
+  color: #e2e8f0;
+}
+
+.dhan-tool-event span {
+  display: block;
+  margin-top: 1px;
+  color: #64748b;
+  font-size: 9px;
+}

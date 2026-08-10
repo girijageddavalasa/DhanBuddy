@@ -16,6 +16,7 @@ from livekit.agents import (
     UserStateChangedEvent,
     cli,
     function_tool,
+    llm,
     room_io,
     tokenize,
 )
@@ -168,12 +169,72 @@ class Assistant(Agent):
         self.room = room
         super().__init__(instructions=SYSTEM_PROMPT)
 
+    async def _publish_tool_status(self, tool: str, status: str, message: str) -> None:
+        """Send privacy-safe tool activity to the frontend for demo visibility."""
+        payload = {
+            "type": "tool_status",
+            "tool": tool,
+            "status": status,
+            "message": message,
+        }
+        try:
+            await self.room.local_participant.publish_data(
+                json.dumps(payload),
+                reliable=True,
+                topic="dhanbuddy.tool_result",
+            )
+        except Exception:
+            logger.exception("TOOL UI DELIVERY FAILED | tool=%s", tool)
+
+    async def on_user_turn_completed(
+        self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage
+    ) -> None:
+        """Add a routing hint for explicit saved-goal comparison requests."""
+        del turn_ctx
+        text = new_message.text_content.casefold()
+        saved_goal_request = any(
+            phrase in text
+            for phrase in (
+                "saved goal",
+                "previous goal",
+                "remembered goal",
+                "remember my goal",
+                "college-fees goal",
+                "college fees goal",
+            )
+        )
+        comparison_request = any(
+            phrase in text
+            for phrase in ("close my", "close the", "savings gap", "compare", "options")
+        )
+        if saved_goal_request and comparison_request:
+            logger.info(
+                "TOOL ROUTER | matched saved-goal scenario request; requesting chain"
+            )
+            new_message.content.append(
+                "Internal routing requirement: call lookup_previous_goal now. "
+                "If it succeeds, immediately call compare_goal_scenarios using "
+                "the returned values. Do not answer from memory or calculate yourself."
+            )
+
     @function_tool
     async def lookup_caller(self) -> dict[str, object]:
         """Look up the current caller's saved profile. Call this before greeting."""
+        logger.info("TOOL CALL | lookup_caller")
+        await self._publish_tool_status(
+            "lookup_caller", "running", "Checking consented caller memory"
+        )
         profile = await asyncio.to_thread(get_caller_profile, self.caller_id)
         if profile is None:
+            logger.info("TOOL RESULT | lookup_caller | found=false")
+            await self._publish_tool_status(
+                "lookup_caller", "completed", "No saved caller profile found"
+            )
             return {"found": False, "message": "No saved profile for this caller."}
+        logger.info("TOOL RESULT | lookup_caller | found=true")
+        await self._publish_tool_status(
+            "lookup_caller", "completed", "Consented caller profile found"
+        )
         return {"found": True, "profile": profile_as_dict(profile)}
 
     @function_tool
@@ -183,8 +244,18 @@ class Assistant(Agent):
         Call this first whenever the caller asks to compare options, close a savings
         gap, or reuse their previous goal. Never ask again for values returned here.
         """
+        logger.info("TOOL CALL | lookup_previous_goal")
+        await self._publish_tool_status(
+            "lookup_previous_goal", "running", "Retrieving your saved savings goal"
+        )
         profile = await asyncio.to_thread(get_caller_profile, self.caller_id)
         if profile is None:
+            logger.info(
+                "TOOL RESULT | lookup_previous_goal | success=false | no profile"
+            )
+            await self._publish_tool_status(
+                "lookup_previous_goal", "failed", "No consented savings goal found"
+            )
             return {
                 "success": False,
                 "reason": "No consented savings goal is saved for this caller.",
@@ -200,12 +271,22 @@ class Assistant(Agent):
         }
         missing = [key for key, value in required.items() if value is None]
         if missing:
+            logger.info(
+                "TOOL RESULT | lookup_previous_goal | success=false | incomplete profile"
+            )
+            await self._publish_tool_status(
+                "lookup_previous_goal", "failed", "Saved goal needs more information"
+            )
             return {
                 "success": False,
                 "reason": "The saved goal is incomplete.",
                 "goal": facts.get("savings_goal"),
                 "missing_fields": missing,
             }
+        logger.info("TOOL RESULT | lookup_previous_goal | success=true")
+        await self._publish_tool_status(
+            "lookup_previous_goal", "completed", "Saved savings goal retrieved"
+        )
         return {
             "success": True,
             "goal": facts.get("savings_goal"),
@@ -235,6 +316,10 @@ class Assistant(Agent):
             already_saved: Current amount saved in rupees.
             monthly_saving: Current monthly saving capacity in rupees.
         """
+        logger.info("TOOL CALL | compare_goal_scenarios")
+        await self._publish_tool_status(
+            "compare_goal_scenarios", "running", "Calculating zero-return options"
+        )
         try:
             result = await asyncio.to_thread(
                 compare_scenarios,
@@ -250,6 +335,9 @@ class Assistant(Agent):
             }
         except (TypeError, ValueError) as error:
             logger.warning("Savings scenario calculation failed: %s", error)
+            await self._publish_tool_status(
+                "compare_goal_scenarios", "failed", "Scenario calculation could not run"
+            )
             return {
                 "type": "savings_scenarios",
                 "success": False,
@@ -272,6 +360,7 @@ class Assistant(Agent):
             payload["ui_message"] = (
                 "The calculation succeeded, but the visual card could not be displayed."
             )
+        logger.info("TOOL RESULT | compare_goal_scenarios | success=true")
         return payload
 
     @function_tool
@@ -298,7 +387,9 @@ class Assistant(Agent):
             monthly_saving: Monthly saving capacity, if known.
             consent_confirmation: The caller's exact latest reply to the consent question.
         """
+        logger.info("TOOL CALL | save_caller_memory")
         if not has_explicit_consent(consent_confirmation):
+            logger.info("TOOL RESULT | save_caller_memory | saved=false | no consent")
             return {
                 "saved": False,
                 "reason": "Explicit consent was not confirmed. Do not save anything.",
@@ -327,6 +418,7 @@ class Assistant(Agent):
             language_preference,
             facts,
         )
+        logger.info("TOOL RESULT | save_caller_memory | saved=true")
         return {"saved": True, "profile": profile_as_dict(profile)}
 
     @function_tool
@@ -336,12 +428,15 @@ class Assistant(Agent):
         Args:
             confirmation: The caller's exact latest reply confirming deletion.
         """
+        logger.info("TOOL CALL | forget_caller")
         if not has_explicit_consent(confirmation):
+            logger.info("TOOL RESULT | forget_caller | deleted=false | no confirmation")
             return {
                 "deleted": False,
                 "reason": "Permanent deletion was not explicitly confirmed.",
             }
         deleted = await asyncio.to_thread(delete_caller_profile, self.caller_id)
+        logger.info("TOOL RESULT | forget_caller | deleted=%s", deleted)
         return {"deleted": deleted}
 
     @function_tool
@@ -360,6 +455,7 @@ class Assistant(Agent):
             already_saved: Amount already saved in rupees.
             monthly_saving: Amount the user can save each month in rupees.
         """
+        logger.info("TOOL CALL | calculate_savings_plan")
         plan = calculate_plan(target_amount, months, already_saved, monthly_saving)
         logger.info("Calculated savings plan: %s", plan)
         return asdict(plan)
@@ -371,6 +467,7 @@ class Assistant(Agent):
         Args:
             query: The savings concept or question to look up.
         """
+        logger.info("TOOL CALL | explain_savings_concept")
         entry = retrieve_knowledge(query)
         if entry is None:
             return {"found": False, "message": "No approved explanation found."}

@@ -75,6 +75,12 @@ interface ScenarioResult {
   data_source: string;
 }
 
+interface ToolActivity {
+  tool: string;
+  status: 'running' | 'completed' | 'failed';
+  message: string;
+}
+
 const formatRupees = (value: number) =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -106,6 +112,7 @@ export function AgentSessionView_01({
   const { state: agentState } = useAgent();
   const [chatOpen, setChatOpen] = useState(true);
   const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
+  const [toolActivity, setToolActivity] = useState<ToolActivity[]>([]);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const state = STATE_COPY[agentState as keyof typeof STATE_COPY] ?? STATE_COPY.connecting;
   const StateIcon = state.icon;
@@ -136,7 +143,19 @@ export function AgentSessionView_01({
           type?: string;
           success?: boolean;
           result?: ScenarioResult;
+          tool?: string;
+          status?: ToolActivity['status'];
+          message?: string;
         };
+        if (message.type === 'tool_status' && message.tool && message.status && message.message) {
+          setToolActivity((current) => {
+            const next = current.filter((item) => item.tool !== message.tool);
+            return [
+              ...next,
+              { tool: message.tool!, status: message.status!, message: message.message! },
+            ].slice(-3);
+          });
+        }
         if (message.type === 'savings_scenarios' && message.success && message.result) {
           setScenarioResult(message.result);
         }
@@ -352,6 +371,32 @@ export function AgentSessionView_01({
           </section>
 
           <aside className="order-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            {toolActivity.length > 0 && (
+              <div className="dhan-tool-monitor sm:col-span-2 xl:col-span-1" aria-live="polite">
+                <div className="flex items-center justify-between">
+                  <p className="dhan-eyebrow">Live tool activity</p>
+                  <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase">
+                    Function calls
+                  </span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {toolActivity.map((activity) => (
+                    <div
+                      key={activity.tool}
+                      className="dhan-tool-event"
+                      data-status={activity.status}
+                    >
+                      <span className="dhan-tool-event-dot" />
+                      <div>
+                        <p>{activity.tool.replaceAll('_', ' ')}</p>
+                        <span>{activity.message}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {scenarioResult && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
