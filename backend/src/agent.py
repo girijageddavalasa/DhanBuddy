@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 from dataclasses import asdict, dataclass
@@ -28,6 +29,11 @@ from memory import (
     profile_as_dict,
     save_caller_profile,
 )
+from tools.savings_scenarios import (
+    compare_scenarios,
+    parse_deadline_months,
+    scenario_as_dict,
+)
 
 logger = logging.getLogger("agent")
 
@@ -43,6 +49,8 @@ A successful call does three things:
 1. Understand one savings goal and collect the target amount, deadline, amount already saved, and monthly saving capacity.
 2. Call calculate_savings_plan to determine whether the user is on track without assuming investment returns.
 3. Explain the result and give one practical next step, such as increasing monthly savings or extending the deadline.
+
+When the caller asks for options, alternatives, ways to close a gap, or a comparison using a previous goal, chain two tools. First call lookup_previous_goal. Then call compare_goal_scenarios with the returned amounts and months. Do not ask again for facts that the lookup tool returned.
 
 Ask for details in this order, with exactly one question per response: target amount, deadline, amount already saved, then monthly saving capacity. Do not ask again for information the user already provided.
 
@@ -71,6 +79,8 @@ Refuse requests to recommend or compare specific stocks, mutual funds, insurance
 Never ask for, repeat, store, or process an OTP, PIN, CVV, password, account number, Aadhaar number, card details, or login credentials. If the user shares one, tell them not to share it and do not repeat it.
 
 Never claim guaranteed returns, guaranteed profits, risk-free outcomes, scheme eligibility, scholarship approval, loan approval, account access, or professional adviser status. Never promise that the goal will definitely be achieved.
+
+If a tool returns success false or reports missing data, explain the problem aloud in one short sentence. Ask only for the missing non-sensitive fact or suggest trying again. Never invent a tool result.
 
 For product advice, account issues, eligibility, approvals, or personalized financial advice, use this escalation script in the user's language: I can only provide an educational savings estimate. Please contact the relevant official organization or a qualified financial professional. Never share your OTP, PIN, or password.
 
@@ -153,8 +163,9 @@ def has_explicit_consent(reply: str) -> bool:
 
 
 class Assistant(Agent):
-    def __init__(self, caller_id: str) -> None:
+    def __init__(self, caller_id: str, room: rtc.Room) -> None:
         self.caller_id = caller_id
+        self.room = room
         super().__init__(instructions=SYSTEM_PROMPT)
 
     @function_tool
@@ -164,6 +175,104 @@ class Assistant(Agent):
         if profile is None:
             return {"found": False, "message": "No saved profile for this caller."}
         return {"found": True, "profile": profile_as_dict(profile)}
+
+    @function_tool
+    async def lookup_previous_goal(self) -> dict[str, object]:
+        """Retrieve the current caller's consented savings goal for comparison.
+
+        Call this first whenever the caller asks to compare options, close a savings
+        gap, or reuse their previous goal. Never ask again for values returned here.
+        """
+        profile = await asyncio.to_thread(get_caller_profile, self.caller_id)
+        if profile is None:
+            return {
+                "success": False,
+                "reason": "No consented savings goal is saved for this caller.",
+                "missing_fields": ["saved savings goal"],
+            }
+        facts = profile.facts
+        months = parse_deadline_months(str(facts.get("target_deadline") or ""))
+        required = {
+            "target_amount": facts.get("target_amount"),
+            "already_saved": facts.get("already_saved"),
+            "monthly_saving": facts.get("monthly_saving"),
+            "months": months,
+        }
+        missing = [key for key, value in required.items() if value is None]
+        if missing:
+            return {
+                "success": False,
+                "reason": "The saved goal is incomplete.",
+                "goal": facts.get("savings_goal"),
+                "missing_fields": missing,
+            }
+        return {
+            "success": True,
+            "goal": facts.get("savings_goal"),
+            **required,
+            "last_saved_at": profile.last_interaction,
+        }
+
+    @function_tool
+    async def compare_goal_scenarios(
+        self,
+        target_amount: float,
+        months: int,
+        already_saved: float,
+        monthly_saving: float,
+    ) -> dict[str, object]:
+        """Compute three zero-return paths for a complete savings goal.
+
+        Call lookup_previous_goal immediately before this tool when the caller asks
+        to use a remembered goal. Pass its returned target, months, saved amount,
+        and monthly saving exactly. This tool returns the current projection, the
+        monthly increase required, a deadline extension option, calculation time,
+        and source. Speak the result naturally and never read raw JSON aloud.
+
+        Args:
+            target_amount: Complete goal amount in rupees.
+            months: Whole months remaining in the current deadline.
+            already_saved: Current amount saved in rupees.
+            monthly_saving: Current monthly saving capacity in rupees.
+        """
+        try:
+            result = await asyncio.to_thread(
+                compare_scenarios,
+                target_amount,
+                months,
+                already_saved,
+                monthly_saving,
+            )
+            payload = {
+                "type": "savings_scenarios",
+                "success": True,
+                "result": scenario_as_dict(result),
+            }
+        except (TypeError, ValueError) as error:
+            logger.warning("Savings scenario calculation failed: %s", error)
+            return {
+                "type": "savings_scenarios",
+                "success": False,
+                "reason": (
+                    "I could not calculate the scenarios from the available values. "
+                    "I will not guess the result."
+                ),
+            }
+
+        try:
+            await self.room.local_participant.publish_data(
+                json.dumps(payload),
+                reliable=True,
+                topic="dhanbuddy.tool_result",
+            )
+            payload["ui_delivery"] = True
+        except Exception:
+            logger.exception("Could not publish savings scenario card to the UI")
+            payload["ui_delivery"] = False
+            payload["ui_message"] = (
+                "The calculation succeeded, but the visual card could not be displayed."
+            )
+        return payload
 
     @function_tool
     async def save_caller_memory(
@@ -412,7 +521,7 @@ async def my_agent(ctx: JobContext):
 
     # Start the session, which initializes the voice pipeline and warms up the models
     await session.start(
-        agent=Assistant(caller_id),
+        agent=Assistant(caller_id, ctx.room),
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(

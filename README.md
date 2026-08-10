@@ -119,6 +119,19 @@ by Git. The approved official-source knowledge library lives in `backend/rag/`.
 See [notes/day4.md](notes/day4.md) for implementation details and
 [DAY4_DEMO.md](DAY4_DEMO.md) for the restart, refusal, and forget-me demonstrations.
 
+## Day 5: chained domain tools
+
+DhanBuddy can now reuse a consented savings goal and compare three practical ways
+to address a gap. `lookup_previous_goal` retrieves the saved inputs from SQLite,
+then `compare_goal_scenarios` performs a deterministic zero-return calculation.
+The result is spoken naturally and sent to the frontend as a timestamped visual
+card over a reliable LiveKit data packet.
+
+The source is **local deterministic calculation**, not a live external API or
+market feed. This is stated in every tool result. Missing memory, incomplete data,
+invalid values, and UI-delivery failures all have explicit fallback responses.
+See [notes/day5.md](notes/day5.md) and [DAY5_DEMO.md](DAY5_DEMO.md).
+
 ## References
 
 - https://github.com/murf-ai/murf-livekit-starter

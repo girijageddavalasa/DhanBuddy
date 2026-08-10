@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { RoomEvent } from 'livekit-client';
 import {
   ArrowDown,
   AudioLines,
+  CalendarClock,
   CircleStop,
   IndianRupee,
   LockKeyhole,
@@ -11,6 +13,7 @@ import {
   Mic,
   Radio,
   Sparkles,
+  TrendingUp,
   Volume2,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -58,6 +61,27 @@ const STATE_COPY = {
 const JOURNEY = ['Goal', 'Target', 'Timeline', 'Savings', 'Estimate'];
 const PIPELINE = ['Deepgram hears', 'Gemini understands', 'Murf Falcon speaks'];
 
+interface ScenarioResult {
+  target_amount: number;
+  current_projected_amount: number;
+  current_monthly_saving: number;
+  current_months: number;
+  on_track: boolean;
+  required_monthly_saving: number;
+  monthly_increase_needed: number;
+  months_needed_at_current_saving: number | null;
+  deadline_extension_months: number | null;
+  calculated_at: string;
+  data_source: string;
+}
+
+const formatRupees = (value: number) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(value);
+
 export function AgentSessionView_01({
   preConnectMessage = 'Start with one dream. What are you saving for?',
   supportsChatInput = true,
@@ -81,6 +105,7 @@ export function AgentSessionView_01({
   const { messages } = useSessionMessages(session);
   const { state: agentState } = useAgent();
   const [chatOpen, setChatOpen] = useState(true);
+  const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const state = STATE_COPY[agentState as keyof typeof STATE_COPY] ?? STATE_COPY.connecting;
   const StateIcon = state.icon;
@@ -97,6 +122,33 @@ export function AgentSessionView_01({
   useEffect(() => {
     if (transcriptRef.current) transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    const handleToolResult = (
+      payload: Uint8Array,
+      _participant?: unknown,
+      _kind?: unknown,
+      topic?: string
+    ) => {
+      if (topic !== 'dhanbuddy.tool_result') return;
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload)) as {
+          type?: string;
+          success?: boolean;
+          result?: ScenarioResult;
+        };
+        if (message.type === 'savings_scenarios' && message.success && message.result) {
+          setScenarioResult(message.result);
+        }
+      } catch {
+        // Ignore malformed third-party room data instead of breaking the call UI.
+      }
+    };
+    session.room.on(RoomEvent.DataReceived, handleToolResult);
+    return () => {
+      session.room.off(RoomEvent.DataReceived, handleToolResult);
+    };
+  }, [session.room]);
 
   return (
     <section
@@ -300,6 +352,61 @@ export function AgentSessionView_01({
           </section>
 
           <aside className="order-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            {scenarioResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="dhan-result-panel sm:col-span-2 xl:col-span-1"
+                aria-live="polite"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="dhan-eyebrow">Your options</p>
+                    <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">
+                      Savings gap comparison
+                    </p>
+                  </div>
+                  <span className="dhan-result-status">
+                    {scenarioResult.on_track ? 'On track' : 'Gap found'}
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-2">
+                  <div className="dhan-result-row">
+                    <IndianRupee className="size-4" />
+                    <div>
+                      <p>Current path</p>
+                      <strong>{formatRupees(scenarioResult.current_projected_amount)}</strong>
+                      <span> by {scenarioResult.current_months} months</span>
+                    </div>
+                  </div>
+                  <div className="dhan-result-row">
+                    <TrendingUp className="size-4" />
+                    <div>
+                      <p>Monthly path</p>
+                      <strong>{formatRupees(scenarioResult.required_monthly_saving)}</strong>
+                      <span> needed each month</span>
+                    </div>
+                  </div>
+                  <div className="dhan-result-row">
+                    <CalendarClock className="size-4" />
+                    <div>
+                      <p>More-time path</p>
+                      <strong>
+                        {scenarioResult.deadline_extension_months === null
+                          ? 'Needs monthly savings'
+                          : `${scenarioResult.deadline_extension_months} extra months`}
+                      </strong>
+                      <span> at the current monthly amount</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-[9px] leading-4 text-slate-400">
+                  Calculated {new Date(scenarioResult.calculated_at).toLocaleString()} · Zero
+                  investment returns
+                </p>
+              </motion.div>
+            )}
+
             <div className="dhan-voice-orbit" data-state={agentState}>
               <div className="dhan-orbit-ring" />
               <AudioVisualizer

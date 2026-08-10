@@ -747,3 +747,65 @@
   border-left-color: #a78bfa;
   background: #18191d;
 }
+
+.dhan-result-panel {
+  border: 1px solid #ddd6fe;
+  border-radius: 22px;
+  background: #fff;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgb(91 63 163 / 8%);
+}
+
+.dark .dhan-result-panel {
+  border-color: #3d3654;
+  background: #18191d;
+  box-shadow: none;
+}
+
+.dhan-result-status {
+  border-radius: 999px;
+  background: #fef3c7;
+  padding: 0.35rem 0.55rem;
+  color: #92400e;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.dhan-result-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 0.65rem;
+  color: #5b3fa3;
+}
+
+.dark .dhan-result-row {
+  background: #222329;
+  color: #c4b5fd;
+}
+
+.dhan-result-row p {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dhan-result-row strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.dark .dhan-result-row strong {
+  color: #f8fafc;
+}
+
+.dhan-result-row span {
+  color: #64748b;
+  font-size: 10px;
+}
