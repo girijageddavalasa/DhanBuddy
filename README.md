@@ -132,6 +132,23 @@ market feed. This is stated in every tool result. Missing memory, incomplete dat
 invalid values, and UI-delivery failures all have explicit fallback responses.
 See [notes/day5.md](notes/day5.md) and [DAY5_DEMO.md](DAY5_DEMO.md).
 
+## Day 6: consented outbound calls
+
+DhanBuddy can place a requested savings-goal check-in call through a stored
+LiveKit outbound SIP trunk backed by a provider such as Twilio. The launcher
+requires explicit opt-in, dispatches the agent before dialing, waits for the
+carrier answer, and prints a safe outcome and retry rule.
+
+The opening identifies DhanBuddy, explains the reason for the call, and tells the
+recipient how to stop future calls. Goal details are withheld until the recipient
+confirms their preferred name. A spoken opt-out is persisted locally by anonymous
+caller ID and immediately ends the call.
+
+This integration uses real telephony status from LiveKit/SIP, but requires your
+own provider account, number, credentials, and `LIVEKIT_SIP_OUTBOUND_TRUNK_ID`.
+No phone number or SIP secret is committed. Voicemail detection is not enabled.
+See [notes/day6.md](notes/day6.md) and [DAY6_DEMO.md](DAY6_DEMO.md).
+
 ## References
 
 - https://github.com/murf-ai/murf-livekit-starter

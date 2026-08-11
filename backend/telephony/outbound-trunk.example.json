@@ -1,0 +1,7 @@
+{
+  "trunk": {
+    "name": "DhanBuddy outbound trunk",
+    "address": "YOUR_TWILIO_TRUNK.pstn.twilio.com",
+    "numbers": ["+91YOUR_TWILIO_NUMBER"]
+  }
+}

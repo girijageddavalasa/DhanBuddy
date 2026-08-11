@@ -4,3 +4,5 @@
 .DS_Store
 frontend/dev-ui*.log
 backend/data/*.db*
+backend/data/outbound_preferences.json
+backend/data/outbound_outcomes.jsonl
