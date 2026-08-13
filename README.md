@@ -1,161 +1,241 @@
-﻿# DhanBuddy
+# DhanBuddy
 
-DhanBuddy is a friendly Indian voice assistant for goal-based savings planning, built for the Financial Services track of 10 Days of Voice Agents - #VoiceForBharat Edition.
+DhanBuddy is a browser-based Indian voice assistant built for the Financial
+Services track of **10 Days of Voice Agents — VoiceForBharat Edition**.
 
-It asks one question at a time, calculates a zero-return savings estimate, and tells the user whether they are on track. It never recommends financial products or requests sensitive banking or identity details.
+## Day 1 — Voice Agent
 
-![DhanBuddy Banner](images/banner.png)
+Day 1 provides a basic real-time voice conversation:
 
-## Voice pipeline
+```text
+Browser → LiveKit → Deepgram STT → Gemini → Murf Falcon TTS → Browser audio
+```
 
-User speech -> Deepgram Nova-3 STT -> Gemini -> deterministic savings calculator -> Murf Falcon TTS -> LiveKit
+- LiveKit connects the browser and Python voice worker.
+- Deepgram Nova-3 multilingual transcribes English, Hindi, and supported
+  code-mixed speech.
+- Gemini generates short conversational responses.
+- Murf Falcon produces the speech output.
+- Murf's **Abhinav** voice is configured because it is an Indian voice whose
+  Falcon configuration supports Indian English and Hindi.
 
-Deepgram runs in multilingual mode for English, Hindi, and code-mixed speech. A small approved local knowledge retriever explains savings terms. It never performs financial calculations or product recommendations.
+English and Hindi are the configured Day 1 language path. Telugu and Tamil remain
+target languages, but this single-session STT configuration does not claim them:
+Deepgram Nova-3 `language="multi"` currently includes Hindi and English, while
+Telugu and Tamil require separate fixed-language recognition configuration.
 
-DhanBuddy uses Murf's Anisha voice with the en-IN locale and Conversation style. This warm Indian English voice was chosen to make a personal money conversation feel familiar and approachable.
+Day 1 deliberately does not include memory, OCR, RAG, financial calculators,
+outbound calls, analytics, escalation, specialist agents, or orchestration.
 
-## What it calculates
+## Day 2 — Personality, Job and Limits
 
-After collecting the goal, target amount, deadline, current savings, and monthly saving capacity, DhanBuddy reports:
+DhanBuddy is a voice-first financial information assistant for Indian users. It
+helps users understand information they provide, make sense of described spending
+or records, and discuss general financial information. It is not a bank,
+investment advisor, financial institution, or government authority.
 
-- projected savings by the deadline,
-- whether the goal is on track,
-- approximate monthly shortfall or surplus,
-- one practical adjustment.
+The Day 2 prompt defines clear knowledge boundaries. DhanBuddy distinguishes user-
+provided or tool-returned facts from unavailable information. It must not invent
+transactions, balances, rates, eligibility, approvals, or other financial facts.
+No financial-data tools or retrieval system are implemented yet.
 
-The estimate assumes no investment returns and is educational, not personalized financial advice.
+Financial guardrails prohibit requesting OTPs, PINs, CVVs, passwords, banking
+credentials, or card-security information. DhanBuddy cannot perform transactions,
+confirm payments or refunds, promise approvals, guarantee returns, or impersonate
+an institution. Sensitive disputes use a reusable preparation script without
+claiming that a human is immediately available.
 
-## Prerequisites
+The agent mirrors English, Hindi, or supported Hindi-English code-mixing. Hindi
+responses use Devanagari unless transliteration is requested. Telugu and Tamil
+remain target languages and are not claimed as runtime-verified.
+
+Responses are short and designed to be spoken. The LiveKit session gives one
+inactivity reprompt, gives a different closing response after continued silence,
+then ends gracefully. Guardrail scenarios are documented in `RED_TEAM.md`.
+
+**Runtime verification is pending because the local voice environment has not yet
+been configured.**
+
+## Day 3 — Personalized Frontend
+
+Day 3 adds a lightweight interface built with plain HTML, CSS, and JavaScript. It
+is served directly by a small FastAPI application and uses the LiveKit browser SDK
+without exposing API credentials in client-side code.
+
+The interface includes DhanBuddy branding, responsive desktop and mobile layouts,
+visible focus states, and five clear voice states: Ready, Connecting, Listening,
+Speaking, and Call ended. It also handles blocked microphone permission, LiveKit
+connection errors, retrying, ending a conversation, and starting again. The bill
+upload button is a visual placeholder only; OCR is not implemented.
+
+Start the static frontend and secure token endpoint with:
+
+```powershell
+cd backend
+uv run uvicorn src.web:app --reload --port 8000
+```
+
+Then open `http://localhost:8000`. Run the LiveKit voice worker separately using
+the existing Day 1 command.
+
+**Runtime verification is pending.**
+
+## Day 5 — Documents, Financial Tools and Trusted Knowledge
+
+Day 5 adds this local document workflow:
+
+```text
+Upload → OCR text → structured extraction → categorization → SQLite
+       → user correction → CSV export → spending tools
+```
+
+FastAPI accepts JPG, PNG, and WEBP files up to 8 MB. Originals receive unique
+names under `backend/data/uploads/original` and are never overwritten. The OCR
+interface is provider-independent; the initial provider is local Tesseract through
+Pytesseract. Tesseract must be installed separately for real OCR execution.
+
+Documents store merchant, date, total, currency, private raw text, and individual
+line items. Unknown fields remain null. Categories use a small deterministic
+allowlist with confidence scores. Low-confidence items require user confirmation,
+and corrections are persisted with `category_source=user`.
+
+SQLite remains the source of truth for personal financial data. Authenticated-by-
+anonymous-cookie endpoints can export normalized transaction CSV, while agent
+tools query actual SQLite rows for summaries, top categories, and recent expenses.
+
+Trusted external knowledge is deliberately separate:
+
+```text
+Personal spending → SQLite
+General education → trusted local RAG documents
+Current RBI material → official RBI retrieval tool
+```
+
+The RAG foundation ingests reviewed text files, chunks them, creates lightweight
+local token-vector representations, and retrieves relevant chunks with source
+metadata. It is **LOCAL**, not a live vector service. The RBI tool is **LIVE** and
+records its retrieval timestamp. If it cannot reach the official source, the agent
+is instructed not to guess.
+
+**Runtime verification is pending.** No receipt samples were available in this
+checkout, and neither Tesseract nor the complete project environment was verified.
+
+## Day 4 — Persistent Memory
+
+Day 4 adds consent-controlled memory at `backend/data/dhanbuddy.db`. SQLite is the
+source of truth, and the voice agent accesses it only through `lookup_user`,
+`save_user_memory`, and `forget_me` tools. Database contents are never inserted
+into the system prompt.
+
+The database stores an anonymous user ID, optional name and language preference,
+a small allowlist of useful facts, consent state, timestamps, and short interaction
+summaries. It does not store full transcripts or financial credentials. Every new
+fact requires an explicit yes before the save branch can run. “Forget me” deletes
+only that anonymous user's rows after confirmation.
+
+LangGraph coordinates the memory decision instead of replacing the voice agent:
+
+```text
+SQLite
+  ↓
+Memory tools
+  ↓
+LangGraph state and conditional consent branch
+  ↓
+LiveKit voice agent
+```
+
+The graph supports lookup, consent request, save, discard, and forget nodes. The
+Day 3 token endpoint retains a random anonymous caller ID in an HTTP-only cookie,
+allowing the same browser to be recognized without collecting a phone number or
+financial identifier. SQLite operations run in a worker thread so they do not
+unnecessarily block the real-time agent event loop.
+
+LiveKit remains responsible for real-time audio, Deepgram for speech recognition,
+Gemini for language understanding, and Murf Falcon for speech output.
+
+**Runtime verification is pending.**
+
+## Requirements
 
 - Python 3.10+
-- uv
+- `uv`
 - Node.js 18+
-- pnpm
+- `pnpm`
 - A LiveKit Cloud project
-- Murf, Deepgram, and Google API keys
+- Murf, Deepgram, and Google API credentials
 
-## Configure
+Required environment variable names:
 
-Copy backend/.env.example to backend/.env.local and frontend/.env.example to frontend/.env.local.
+```text
+LIVEKIT_URL
+LIVEKIT_API_KEY
+LIVEKIT_API_SECRET
+MURF_API_KEY
+DEEPGRAM_API_KEY
+GOOGLE_API_KEY
+AGENT_NAME
+```
 
-Set LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET, MURF_API_KEY, DEEPGRAM_API_KEY, and GOOGLE_API_KEY in the backend file. Set the matching LiveKit values and AGENT_NAME=dhanbuddy in the frontend file.
+Copy `backend/.env.example` to `backend/.env.local` and
+`frontend/.env.example` to `frontend/.env.local`. Put the matching LiveKit
+values in both files and keep `AGENT_NAME=dhanbuddy`. Never commit either local
+environment file.
 
-Never commit either .env.local file.
+## Start the backend
 
-## Install and run
+```powershell
+cd backend
+uv sync
+uv run python src/agent.py download-files
+uv run python src/agent.py dev
+```
 
-Backend:
+## Start the frontend
 
-    cd backend
-    uv sync
-    uv run python src/agent.py download-files
-    uv run python src/agent.py dev
+In a second terminal:
 
-Frontend, in another terminal:
+```powershell
+cd frontend
+pnpm install
+pnpm dev
+```
 
-    cd frontend
-    pnpm install
-    pnpm dev
+Open `http://localhost:3000`, connect, allow microphone access, and confirm that
+the greeting is audible.
 
-Open http://localhost:3000, select Talk to DhanBuddy, allow microphone access, and speak. On Windows, start_app.ps1 can start both services after setup.
+## Voice test
 
-## Test and lint
+Try these in order:
 
-    cd backend
-    uv run pytest
-    uv run ruff check .
+1. English: `Hello DhanBuddy. Can you hear me?`
+2. Hindi: `नमस्ते धनबडी, क्या आप मेरी आवाज़ सुन सकते हैं?`
+3. Code-mixed: `DhanBuddy, kya aap mujhe sun sakte hain?`
+4. End the session using the frontend disconnect control.
 
-    cd frontend
-    pnpm lint
-    pnpm format:check
+A test is successful only when the browser transcript reaches the agent and the
+Murf-generated reply is audible. Automated checks alone do not verify microphone,
+LiveKit Cloud, or speaker output.
 
-## Day 1 demo checklist
+## Automated checks
 
-1. Start the backend and frontend with valid API keys.
-2. Record a short conversation and say Financial Services track aloud.
-3. Note the latency from end-of-user-speech to first audio out.
-4. Post the video on LinkedIn. Mention DhanBuddy, the problem it solves, Murf Falcon as the fastest TTS API, and 10 Days of Voice Agents - VoiceForBharat Edition.
-5. Tag Murf AI and include #VoiceForBharat.
-6. Submit the LinkedIn post link using the Discord form.
+```powershell
+cd backend
+uv run pytest
+uv run ruff check .
 
-## Day 2: safe multilingual conversations
-
-DhanBuddy now includes:
-
-- a structured identity, objectives, knowledge boundary, language policy, guardrails, and voice style,
-- English, Hindi, and natural Hinglish mirroring,
-- explicit refusals and a safe escalation script,
-- deterministic local retrieval for approved savings explanations,
-- one silence re-prompt and a graceful close after continued inactivity,
-- short spoken replies with one question at a time,
-- red-team cases documented in [RED_TEAM.md](RED_TEAM.md),
-- a camera-ready script in [DAY2_DEMO.md](DAY2_DEMO.md).
-
-The knowledge retriever is intentionally small and auditable. Add only reviewed educational entries to `backend/src/knowledge.py`. Do not use retrieval for arithmetic, eligibility decisions, approvals, or financial-product advice.
-
-## Day 3: personalised voice interface
-
-The frontend is now designed specifically for DhanBuddy's Financial Services track. It includes:
-
-- a custom yellow, purple, and magenta DhanBuddy identity and rupee voice logo,
-- clear Ready, Connecting, Listening, Speaking, and Call ended states,
-- an animated audio visualiser and speaker indicators for the user and DhanBuddy,
-- a microphone-permission error with simple browser recovery instructions,
-- a visible four-step savings conversation guide and privacy reminders,
-- transcript privacy controls and a Start again action after a call ends,
-- automatic call closure when the user says "bye" or "goodbye".
-
-See [DAY3_DEMO.md](DAY3_DEMO.md) for the camera-ready flow and test checklist.
-
-## Day 4: persistent, consent-based memory
-
-DhanBuddy now recognises a returning browser using a random anonymous caller ID
-and stores approved profile facts in SQLite. The agent reads and writes memory only
-through `lookup_caller`, `save_caller_memory`, and `forget_caller` tools. Saving and
-permanent deletion both require explicit caller confirmation.
-
-The database is created at `backend/data/dhanbuddy.db` and is intentionally ignored
-by Git. The approved official-source knowledge library lives in `backend/rag/`.
-See [notes/day4.md](notes/day4.md) for implementation details and
-[DAY4_DEMO.md](DAY4_DEMO.md) for the restart, refusal, and forget-me demonstrations.
-
-## Day 5: chained domain tools
-
-DhanBuddy can now reuse a consented savings goal and compare three practical ways
-to address a gap. `lookup_previous_goal` retrieves the saved inputs from SQLite,
-then `compare_goal_scenarios` performs a deterministic zero-return calculation.
-The result is spoken naturally and sent to the frontend as a timestamped visual
-card over a reliable LiveKit data packet.
-
-The source is **local deterministic calculation**, not a live external API or
-market feed. This is stated in every tool result. Missing memory, incomplete data,
-invalid values, and UI-delivery failures all have explicit fallback responses.
-See [notes/day5.md](notes/day5.md) and [DAY5_DEMO.md](DAY5_DEMO.md).
-
-## Day 6: consented outbound calls
-
-DhanBuddy can place a requested savings-goal check-in call through a stored
-LiveKit outbound SIP trunk backed by a provider such as Twilio. The launcher
-requires explicit opt-in, dispatches the agent before dialing, waits for the
-carrier answer, and prints a safe outcome and retry rule.
-
-The opening identifies DhanBuddy, explains the reason for the call, and tells the
-recipient how to stop future calls. Goal details are withheld until the recipient
-confirms their preferred name. A spoken opt-out is persisted locally by anonymous
-caller ID and immediately ends the call.
-
-This integration uses real telephony status from LiveKit/SIP, but requires your
-own provider account, number, credentials, and `LIVEKIT_SIP_OUTBOUND_TRUNK_ID`.
-No phone number or SIP secret is committed. Voicemail detection is not enabled.
-See [notes/day6.md](notes/day6.md) and [DAY6_DEMO.md](DAY6_DEMO.md).
+cd ../frontend
+pnpm lint
+pnpm format:check
+pnpm build
+```
 
 ## References
 
-- https://github.com/murf-ai/murf-livekit-starter
-- https://murf.ai/api/docs/voices-styles/voice-library
-- https://murf.ai/api/docs/text-to-speech-models/falcon-2
-- https://murf.ai/api/docs/text-to-speech/streaming
-- https://docs.livekit.io/agents/start/voice-ai/
+- [Murf Falcon streaming documentation](https://murf.ai/api/docs/text-to-speech/streaming)
+- [Murf Falcon voice library](https://murf.ai/api/docs/voices-styles/voice-library)
+- [LiveKit Agents documentation](https://docs.livekit.io/agents)
+- [Deepgram models and languages](https://developers.deepgram.com/docs/models-languages-overview/)
 
 ## License
 

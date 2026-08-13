@@ -1,0 +1,76 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  color: #1c1b18;
+  background: #f6edcf;
+  --ink: #1c1b18;
+  --muted: #676154;
+  --cream: #f6edcf;
+  --white: #fffef9;
+  --yellow: #f2c94c;
+  --yellow-dark: #c99b0d;
+  --border: #ded5b9;
+  --danger: #8c2f27;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-height: 100vh; background: var(--cream); }
+
+button, a { font: inherit; }
+
+button:focus-visible, a:focus-visible {
+  outline: 3px solid #3e5f8a;
+  outline-offset: 3px;
+}
+
+.shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 40px; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.wordmark { color: var(--ink); font-size: 1.35rem; font-weight: 800; text-decoration: none; }
+.day-label { color: var(--muted); font-size: 0.88rem; }
+.intro { max-width: 720px; margin: clamp(56px, 9vw, 96px) auto 30px; text-align: center; }
+.eyebrow, .state-label { font-size: 0.76rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.eyebrow { color: #745a0a; }
+h1 { margin: 12px 0; font-size: clamp(2.2rem, 6vw, 4.4rem); line-height: 1.02; letter-spacing: -0.045em; }
+.lede { margin: 0 auto; color: var(--muted); font-size: clamp(1rem, 2vw, 1.18rem); line-height: 1.6; }
+.voice-card { max-width: 620px; margin: 0 auto; padding: clamp(24px, 5vw, 44px); text-align: center; background: var(--white); border: 1px solid var(--border); border-radius: 24px; }
+.state-label { margin: 20px 0 7px; color: #745a0a; }
+h2 { margin: 0; font-size: clamp(1.55rem, 4vw, 2.1rem); }
+.status-detail { min-height: 48px; margin: 10px auto 24px; color: var(--muted); line-height: 1.5; }
+.visualizer { height: 52px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.visualizer span { width: 7px; height: 12px; background: var(--ink); border-radius: 999px; transition: height 180ms ease, background 180ms ease; }
+.visualizer.ready span:not(:nth-child(3)), .visualizer.ended span:not(:nth-child(3)) { display: none; }
+.visualizer.ready span:nth-child(3) { width: 30px; height: 42px; border: 7px solid var(--ink); border-top-width: 5px; background: transparent; border-radius: 16px 16px 20px 20px; }
+.visualizer.connecting span { animation: pulse 1s ease-in-out infinite alternate; }
+.visualizer.listening span, .visualizer.speaking span { animation: wave 850ms ease-in-out infinite alternate; background: var(--yellow-dark); }
+.visualizer span:nth-child(2) { animation-delay: 120ms; }
+.visualizer span:nth-child(3) { animation-delay: 240ms; }
+.visualizer span:nth-child(4) { animation-delay: 360ms; }
+.visualizer span:nth-child(5) { animation-delay: 480ms; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.button { min-height: 50px; padding: 0 22px; border: 1px solid var(--ink); border-radius: 999px; cursor: pointer; font-weight: 750; }
+.button.primary { background: var(--yellow); color: var(--ink); }
+.button.secondary { background: transparent; color: var(--ink); }
+.button.danger { background: var(--danger); border-color: var(--danger); color: white; }
+.button:hover { transform: translateY(-1px); }
+.button:disabled { cursor: wait; opacity: 0.65; transform: none; }
+.error-box { margin: 0 0 20px; padding: 14px; color: #6d211b; background: #fff0ed; border: 1px solid #e7b4ad; border-radius: 12px; text-align: left; }
+.error-box strong, .error-box span { display: block; }
+.error-box span { margin-top: 4px; }
+.upload-note, .privacy-note { color: var(--muted); font-size: 0.9rem; }
+.privacy-note { margin: 22px auto 0; text-align: center; }
+
+@keyframes wave { from { height: 10px; } to { height: 42px; } }
+@keyframes pulse { from { opacity: 0.28; } to { opacity: 1; } }
+
+@media (max-width: 520px) {
+  .shell { width: min(100% - 20px, 920px); padding-top: 20px; }
+  .intro { margin-top: 48px; }
+  .voice-card { border-radius: 18px; }
+  .actions, .button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

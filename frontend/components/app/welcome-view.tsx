@@ -1,169 +1,64 @@
-'use client';
-
-import { ArrowRight, LockKeyhole, Mic, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/shadcn/utils';
+
+function WelcomeImage() {
+  return (
+    <svg
+      width="64"
+      height="64"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="text-fg0 mb-4 size-16"
+    >
+      <path
+        d="M15 24V40C15 40.7957 14.6839 41.5587 14.1213 42.1213C13.5587 42.6839 12.7956 43 12 43C11.2044 43 10.4413 42.6839 9.87868 42.1213C9.31607 41.5587 9 40.7957 9 40V24C9 23.2044 9.31607 22.4413 9.87868 21.8787C10.4413 21.3161 11.2044 21 12 21C12.7956 21 13.5587 21.3161 14.1213 21.8787C14.6839 22.4413 15 23.2044 15 24ZM22 5C21.2044 5 20.4413 5.31607 19.8787 5.87868C19.3161 6.44129 19 7.20435 19 8V56C19 56.7957 19.3161 57.5587 19.8787 58.1213C20.4413 58.6839 21.2044 59 22 59C22.7956 59 23.5587 58.6839 24.1213 58.1213C24.6839 57.5587 25 56.7957 25 56V8C25 7.20435 24.6839 6.44129 24.1213 5.87868C23.5587 5.31607 22.7956 5 22 5ZM32 13C31.2044 13 30.4413 13.3161 29.8787 13.8787C29.3161 14.4413 29 15.2044 29 16V48C29 48.7957 29.3161 49.5587 29.8787 50.1213C30.4413 50.6839 31.2044 51 32 51C32.7956 51 33.5587 50.6839 34.1213 50.1213C34.6839 49.5587 35 48.7957 35 48V16C35 15.2044 34.6839 14.4413 34.1213 13.8787C33.5587 13.3161 32.7956 13 32 13ZM42 21C41.2043 21 40.4413 21.3161 39.8787 21.8787C39.3161 22.4413 39 23.2044 39 24V40C39 40.7957 39.3161 41.5587 39.8787 42.1213C40.4413 42.6839 41.2043 43 42 43C42.7957 43 43.5587 42.6839 44.1213 42.1213C44.6839 41.5587 45 40.7957 45 40V24C45 23.2044 44.6839 22.4413 44.1213 21.8787C43.5587 21.3161 42.7957 21 42 21ZM52 17C51.2043 17 50.4413 17.3161 49.8787 17.8787C49.3161 18.4413 49 19.2044 49 20V44C49 44.7957 49.3161 45.5587 49.8787 46.1213C50.4413 46.6839 51.2043 47 52 47C52.7957 47 53.5587 46.6839 54.1213 46.1213C54.6839 45.5587 55 44.7957 55 44V20C55 19.2044 54.6839 18.4413 54.1213 17.8787C53.5587 17.3161 52.7957 17 52 17Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
 
 interface WelcomeViewProps {
   startButtonText: string;
   onStartCall: () => void;
-  isConnecting?: boolean;
-  isEnded?: boolean;
-  microphoneError?: string | null;
 }
-
-const FEATURES = [
-  { icon: Sparkles, label: 'Simple goal estimate' },
-  { icon: ShieldCheck, label: 'Privacy-first guidance' },
-  { icon: Mic, label: 'English, Hindi & Hinglish' },
-];
 
 export const WelcomeView = ({
   startButtonText,
   onStartCall,
-  isConnecting = false,
-  isEnded = false,
-  microphoneError,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
-    <div ref={ref} className="dhan-page min-h-svh overflow-y-auto px-4 py-6 sm:px-6 lg:py-10">
-      <div className="mx-auto flex min-h-[calc(100svh-3rem)] max-w-6xl flex-col">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="dhan-logo-wrap">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/dhanbuddy-logo.svg" alt="DhanBuddy" className="size-10" />
-            </div>
-            <div>
-              <p className="text-lg font-black tracking-tight text-violet-950 dark:text-white">
-                DhanBuddy
-              </p>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-fuchsia-600 uppercase">
-                Voice savings planner
-              </p>
-            </div>
-          </div>
-          <div className="hidden items-center gap-2 rounded-full border border-violet-200 bg-white/70 px-4 py-2 text-xs font-bold text-violet-800 shadow-sm backdrop-blur sm:flex dark:border-white/10 dark:bg-white/5 dark:text-violet-100">
-            <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
-            Educational estimates only
-          </div>
-        </header>
+    <div ref={ref}>
+      <section className="bg-background flex flex-col items-center justify-center text-center">
+        <WelcomeImage />
 
-        <main className="grid min-w-0 flex-1 items-center gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-8 lg:py-12">
-          <section className="max-w-2xl min-w-0">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1.5 text-xs font-black tracking-wide text-amber-900 uppercase dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
-              <Sparkles className="size-3.5" />
-              Financial Services · VoiceForBharat
-            </div>
+        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
+          Chat live with your voice AI agent
+        </p>
 
-            <h1 className="text-5xl leading-[0.98] font-black tracking-[-0.055em] text-balance text-violet-950 sm:text-6xl dark:text-white">
-              Make your savings goal <span className="dhan-gradient-text">feel possible.</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base leading-7 font-medium text-violet-900/70 sm:text-lg dark:text-violet-100/70">
-              Tell DhanBuddy your goal, deadline and monthly savings. Get a clear, zero-return
-              estimate in a natural Indian voice.
-            </p>
+        <Button
+          size="lg"
+          onClick={onStartCall}
+          className="mt-6 w-64 rounded-full font-mono text-xs font-bold tracking-wider uppercase"
+        >
+          {startButtonText}
+        </Button>
+      </section>
 
-            <div className="mt-7 flex flex-wrap gap-3">
-              {FEATURES.map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-2 rounded-full border border-violet-200/80 bg-white/65 px-3 py-2 text-xs font-bold text-violet-800 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-violet-100"
-                >
-                  <Icon className="size-4 text-fuchsia-600 dark:text-fuchsia-400" />
-                  {label}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="relative mx-auto w-full max-w-md min-w-0">
-            <div className="dhan-orbit dhan-orbit-one" />
-            <div className="dhan-orbit dhan-orbit-two" />
-            <div className="dhan-card relative z-10 p-6 sm:p-8">
-              <div className="mb-7 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      'grid size-12 place-items-center rounded-2xl shadow-lg',
-                      isEnded
-                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-400/15 dark:text-violet-200'
-                        : 'bg-gradient-to-br from-amber-300 to-yellow-500 text-violet-950'
-                    )}
-                  >
-                    {isEnded ? <RotateCcw className="size-6" /> : <Mic className="size-6" />}
-                  </div>
-                  <div>
-                    <p className="text-xs font-black tracking-[0.16em] text-fuchsia-600 uppercase dark:text-fuchsia-400">
-                      {isEnded ? 'Call ended' : isConnecting ? 'Connecting' : 'Ready'}
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-violet-950 dark:text-white">
-                      {isEnded
-                        ? 'Plan another goal anytime'
-                        : isConnecting
-                          ? 'Joining your private session'
-                          : 'Your goal. One simple conversation.'}
-                    </p>
-                  </div>
-                </div>
-                <div className="dhan-sound-dots" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              </div>
-
-              {microphoneError && (
-                <div
-                  role="alert"
-                  className="mb-5 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-left dark:border-rose-400/30 dark:bg-rose-400/10"
-                >
-                  <p className="text-sm font-black text-rose-900 dark:text-rose-100">
-                    Microphone access is blocked
-                  </p>
-                  <p className="mt-1 text-xs leading-5 font-medium text-rose-800/80 dark:text-rose-100/70">
-                    {microphoneError} Select the lock icon near the address bar, allow Microphone,
-                    then try again.
-                  </p>
-                </div>
-              )}
-
-              <Button
-                size="lg"
-                onClick={onStartCall}
-                disabled={isConnecting}
-                className="dhan-primary-button h-14 w-full rounded-2xl text-sm font-black tracking-wide"
-              >
-                {isConnecting ? (
-                  <>
-                    <span className="dhan-spinner" />
-                    Connecting… please wait
-                  </>
-                ) : (
-                  <>
-                    {isEnded ? 'Start again' : startButtonText}
-                    <ArrowRight className="size-5" />
-                  </>
-                )}
-              </Button>
-
-              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-violet-50/80 p-4 dark:bg-violet-400/10">
-                <LockKeyhole className="mt-0.5 size-4 shrink-0 text-violet-700 dark:text-violet-300" />
-                <p className="text-xs leading-5 font-semibold text-violet-900/70 dark:text-violet-100/70">
-                  Never share an OTP, PIN, password, account number or card details. DhanBuddy will
-                  never ask for them.
-                </p>
-              </div>
-            </div>
-          </section>
-        </main>
-
-        <footer className="flex flex-col gap-2 border-t border-violet-200/70 pt-5 text-xs font-semibold text-violet-800/60 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:text-violet-100/50">
-          <p>Powered by Murf Falcon · LiveKit · Deepgram · Gemini</p>
-          <p>Educational estimate · No investment returns assumed</p>
-        </footer>
+      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
+        <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
+          Need help getting set up? Check out the{' '}
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://docs.livekit.io/agents/start/voice-ai/"
+            className="underline"
+          >
+            Voice AI quickstart
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

@@ -1,126 +1,174 @@
-"""Privacy-safe persistent caller memory backed by SQLite."""
-
-import json
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 DEFAULT_DATABASE_PATH = Path(__file__).resolve().parents[1] / "data" / "dhanbuddy.db"
+ALLOWED_MEMORY_KEYS = {
+    "name", "preferred_language", "financial_goal", "budgeting_style",
+    "transaction_categories",
+}
+SENSITIVE_TERMS = {"otp", "pin", "cvv", "password", "banking credential", "card security"}
 
 
 @dataclass(frozen=True)
-class CallerProfile:
+class UserMemory:
     user_id: str
-    name: str
-    language_preference: str
-    facts: dict[str, Any]
-    consent_granted: bool
+    name: str | None
+    preferred_language: str | None
+    memory_consent: bool
+    facts: dict[str, str]
     last_interaction: str
 
 
-def _connect(database_path: Path = DEFAULT_DATABASE_PATH) -> sqlite3.Connection:
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _validate_user_id(user_id: str) -> str:
+    value = user_id.strip()
+    if not value or len(value) > 128:
+        raise ValueError("Invalid user ID.")
+    return value
+
+
+@contextmanager
+def _connect(database_path: Path):
     database_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(database_path)
     connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA journal_mode=WAL")
-    connection.execute("PRAGMA foreign_keys=ON")
-    return connection
+    connection.execute("PRAGMA foreign_keys = ON")
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def initialize_database(database_path: Path = DEFAULT_DATABASE_PATH) -> None:
-    """Create the memory table if it does not already exist."""
+    with _connect(database_path) as connection:
+        connection.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id TEXT PRIMARY KEY, name TEXT, preferred_language TEXT,
+                memory_consent INTEGER NOT NULL DEFAULT 0 CHECK (memory_consent IN (0, 1)),
+                created_at TEXT NOT NULL, last_interaction TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS user_facts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL,
+                key TEXT NOT NULL, value TEXT NOT NULL, created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL, UNIQUE (user_id, key),
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS interactions (
+                interaction_id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL,
+                summary TEXT NOT NULL, created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            );
+        """)
+
+
+def create_user(user_id: str, database_path: Path = DEFAULT_DATABASE_PATH) -> UserMemory:
+    user_id = _validate_user_id(user_id)
+    initialize_database(database_path)
+    timestamp = _now()
     with _connect(database_path) as connection:
         connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS caller_profiles (
-                user_id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                language_preference TEXT NOT NULL,
-                facts_json TEXT NOT NULL,
-                consent_granted INTEGER NOT NULL CHECK (consent_granted IN (0, 1)),
-                last_interaction TEXT NOT NULL
-            )
-            """
+            "INSERT INTO users (user_id, created_at, last_interaction) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET last_interaction = excluded.last_interaction",
+            (user_id, timestamp, timestamp),
         )
+    memory = lookup_user(user_id, database_path)
+    if memory is None:
+        raise RuntimeError("User creation failed.")
+    return memory
 
 
-def get_caller_profile(
-    user_id: str, database_path: Path = DEFAULT_DATABASE_PATH
-) -> CallerProfile | None:
-    """Return a saved caller profile, if one exists."""
+def lookup_user(user_id: str, database_path: Path = DEFAULT_DATABASE_PATH) -> UserMemory | None:
+    user_id = _validate_user_id(user_id)
     initialize_database(database_path)
     with _connect(database_path) as connection:
-        row = connection.execute(
-            "SELECT * FROM caller_profiles WHERE user_id = ?", (user_id,)
-        ).fetchone()
-    if row is None:
-        return None
-    return CallerProfile(
-        user_id=row["user_id"],
-        name=row["name"],
-        language_preference=row["language_preference"],
-        facts=json.loads(row["facts_json"]),
-        consent_granted=bool(row["consent_granted"]),
-        last_interaction=row["last_interaction"],
+        user = connection.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
+        if user is None:
+            return None
+        rows = connection.execute(
+            "SELECT key, value FROM user_facts WHERE user_id = ? ORDER BY id", (user_id,)
+        ).fetchall()
+    return UserMemory(
+        user_id=user["user_id"], name=user["name"],
+        preferred_language=user["preferred_language"],
+        memory_consent=bool(user["memory_consent"]),
+        facts={row["key"]: row["value"] for row in rows},
+        last_interaction=user["last_interaction"],
     )
 
 
-def save_caller_profile(
-    user_id: str,
-    name: str,
-    language_preference: str,
-    facts: dict[str, Any],
+def save_user_memory(
+    user_id: str, key: str, value: str, consent: bool,
     database_path: Path = DEFAULT_DATABASE_PATH,
-) -> CallerProfile:
-    """Insert or update a caller profile after consent was verified by the tool."""
+) -> UserMemory:
+    user_id = _validate_user_id(user_id)
+    key, value = key.strip().casefold(), value.strip()
+    if not consent:
+        raise PermissionError("Memory consent is required.")
+    if key not in ALLOWED_MEMORY_KEYS:
+        raise ValueError("This memory type is not allowed.")
+    if not value or len(value) > 500:
+        raise ValueError("Invalid memory value.")
+    if any(term in f"{key} {value}".casefold() for term in SENSITIVE_TERMS):
+        raise ValueError("Sensitive credentials cannot be stored.")
     initialize_database(database_path)
-    timestamp = datetime.now(timezone.utc).isoformat()
-    profile = CallerProfile(
-        user_id=user_id,
-        name=name.strip(),
-        language_preference=language_preference.strip() or "English",
-        facts=facts,
-        consent_granted=True,
-        last_interaction=timestamp,
-    )
+    timestamp = _now()
     with _connect(database_path) as connection:
         connection.execute(
-            """
-            INSERT INTO caller_profiles
-                (user_id, name, language_preference, facts_json,
-                 consent_granted, last_interaction)
-            VALUES (?, ?, ?, ?, 1, ?)
-            ON CONFLICT(user_id) DO UPDATE SET
-                name = excluded.name,
-                language_preference = excluded.language_preference,
-                facts_json = excluded.facts_json,
-                consent_granted = 1,
-                last_interaction = excluded.last_interaction
-            """,
-            (
-                profile.user_id,
-                profile.name,
-                profile.language_preference,
-                json.dumps(profile.facts, ensure_ascii=False),
-                profile.last_interaction,
-            ),
+            "INSERT INTO users (user_id, memory_consent, created_at, last_interaction) "
+            "VALUES (?, 1, ?, ?) ON CONFLICT(user_id) DO UPDATE SET "
+            "memory_consent = 1, last_interaction = excluded.last_interaction",
+            (user_id, timestamp, timestamp),
         )
-    return profile
+        connection.execute(
+            "INSERT INTO user_facts (user_id, key, value, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET "
+            "value = excluded.value, updated_at = excluded.updated_at",
+            (user_id, key, value, timestamp, timestamp),
+        )
+        if key == "name":
+            connection.execute("UPDATE users SET name = ? WHERE user_id = ?", (value, user_id))
+        elif key == "preferred_language":
+            connection.execute(
+                "UPDATE users SET preferred_language = ? WHERE user_id = ?", (value, user_id)
+            )
+    memory = lookup_user(user_id, database_path)
+    if memory is None:
+        raise RuntimeError("Memory save failed.")
+    return memory
 
 
-def delete_caller_profile(
-    user_id: str, database_path: Path = DEFAULT_DATABASE_PATH
-) -> bool:
-    """Permanently delete a caller profile and return whether it existed."""
+def record_interaction(
+    user_id: str, summary: str, database_path: Path = DEFAULT_DATABASE_PATH
+) -> None:
+    user_id, summary = _validate_user_id(user_id), summary.strip()
+    if not summary or len(summary) > 500:
+        raise ValueError("Invalid interaction summary.")
+    if lookup_user(user_id, database_path) is None:
+        create_user(user_id, database_path)
+    with _connect(database_path) as connection:
+        connection.execute(
+            "INSERT INTO interactions (user_id, summary, created_at) VALUES (?, ?, ?)",
+            (user_id, summary, _now()),
+        )
+
+
+def forget_me(user_id: str, database_path: Path = DEFAULT_DATABASE_PATH) -> bool:
+    user_id = _validate_user_id(user_id)
     initialize_database(database_path)
     with _connect(database_path) as connection:
-        cursor = connection.execute(
-            "DELETE FROM caller_profiles WHERE user_id = ?", (user_id,)
-        )
+        cursor = connection.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
     return cursor.rowcount > 0
 
 
-def profile_as_dict(profile: CallerProfile) -> dict[str, Any]:
-    return asdict(profile)
+def memory_as_dict(memory: UserMemory) -> dict[str, object]:
+    return asdict(memory)

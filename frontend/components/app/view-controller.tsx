@@ -1,9 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
-import { ConnectionState } from 'livekit-client';
-import { AnimatePresence, type MotionProps, motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useSessionContext } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { AgentSessionView_01 } from '@/components/agents-ui/blocks/agent-session-view-01';
@@ -12,11 +10,22 @@ import { WelcomeView } from '@/components/app/welcome-view';
 const MotionWelcomeView = motion.create(WelcomeView);
 const MotionSessionView = motion.create(AgentSessionView_01);
 
-const VIEW_MOTION_PROPS: MotionProps = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: 0.35, ease: 'easeOut' },
+const VIEW_MOTION_PROPS = {
+  variants: {
+    visible: {
+      opacity: 1,
+    },
+    hidden: {
+      opacity: 0,
+    },
+  },
+  initial: 'hidden',
+  animate: 'visible',
+  exit: 'hidden',
+  transition: {
+    duration: 0.5,
+    ease: 'linear',
+  },
 };
 
 interface ViewControllerProps {
@@ -24,71 +33,25 @@ interface ViewControllerProps {
 }
 
 export function ViewController({ appConfig }: ViewControllerProps) {
-  const session = useSessionContext();
+  const { isConnected, start } = useSessionContext();
   const { resolvedTheme } = useTheme();
-  const [startRequested, setStartRequested] = useState(false);
-  const [isRequestingMicrophone, setIsRequestingMicrophone] = useState(false);
-  const [callEnded, setCallEnded] = useState(false);
-  const [microphoneError, setMicrophoneError] = useState<string | null>(null);
-  const wasConnected = useRef(false);
-
-  useEffect(() => {
-    if (session.isConnected) {
-      wasConnected.current = true;
-      return;
-    }
-    if (wasConnected.current && session.connectionState === ConnectionState.Disconnected) {
-      setCallEnded(true);
-      setStartRequested(false);
-      wasConnected.current = false;
-    }
-  }, [session.connectionState, session.isConnected]);
-
-  const startCall = useCallback(async () => {
-    setMicrophoneError(null);
-    setCallEnded(false);
-    setStartRequested(true);
-    setIsRequestingMicrophone(true);
-
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('This browser cannot access a microphone.');
-      }
-      const previewStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      previewStream.getTracks().forEach((track) => track.stop());
-      await session.start();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Microphone permission was denied.';
-      setMicrophoneError(message);
-      setStartRequested(false);
-    } finally {
-      setIsRequestingMicrophone(false);
-    }
-  }, [session]);
-
-  const isConnecting =
-    isRequestingMicrophone ||
-    (startRequested && session.connectionState === ConnectionState.Connecting);
 
   return (
     <AnimatePresence mode="wait">
-      {!session.isConnected && (
+      {/* Welcome view */}
+      {!isConnected && (
         <MotionWelcomeView
-          key={callEnded ? 'ended' : 'welcome'}
+          key="welcome"
           {...VIEW_MOTION_PROPS}
           startButtonText={appConfig.startButtonText}
-          onStartCall={startCall}
-          isConnecting={isConnecting}
-          isEnded={callEnded}
-          microphoneError={microphoneError}
+          onStartCall={start}
         />
       )}
-
-      {session.isConnected && (
+      {/* Session view */}
+      {isConnected && (
         <MotionSessionView
           key="session-view"
           {...VIEW_MOTION_PROPS}
-          preConnectMessage="DhanBuddy is ready. Tell me what you are saving for."
           supportsChatInput={appConfig.supportsChatInput}
           supportsVideoInput={appConfig.supportsVideoInput}
           supportsScreenShare={appConfig.supportsScreenShare}
