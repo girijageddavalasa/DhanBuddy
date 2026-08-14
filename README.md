@@ -3,6 +3,47 @@
 DhanBuddy is a browser-based Indian voice assistant built for the Financial
 Services track of **10 Days of Voice Agents — VoiceForBharat Edition**.
 
+## Architecture Flow
+
+```mermaid
+flowchart TD
+    U[User in Browser] --> LK[LiveKit]
+    LK --> STT[Deepgram STT]
+    STT --> MAIN[DhanBuddy Main Agent]
+    MAIN --> LLM[Gemini]
+    LLM --> TTS[Murf Falcon TTS]
+    TTS --> U
+
+    MAIN --> ROUTER{Question type}
+    ROUTER -->|Normal finance| TOOLS[Memory, OCR, Spending and RAG tools]
+    ROUTER -->|Government scheme| SPECIALIST[Scheme Specialist]
+
+    MAIN --> ESC[Human Escalation]
+    MAIN --> CALLS[Outbound Calls]
+    MAIN --> ANALYTICS[Analytics and Health Monitor]
+
+    TOOLS --> DB[(SQLite)]
+    SPECIALIST --> TRUSTED[Trusted Knowledge]
+```
+
+## Days 1–9 at a Glance
+
+| Day | What was completed |
+|---|---|
+| 1 | LiveKit voice pipeline with Deepgram, Gemini, and Murf Falcon |
+| 2 | DhanBuddy personality, language rules, safety limits, and silence handling |
+| 3 | Lightweight responsive voice interface with connection and error states |
+| 4 | Consent-based memory using SQLite and a LangGraph workflow |
+| 5 | Bill OCR, transaction storage, categorization, CSV, financial tools, and RAG |
+| 6 | Consent-controlled outbound calls with Twilio and LiveKit SIP adapters |
+| 7 | Permission-based human escalation with redaction and support tracking |
+| 8 | Call analytics dashboard and agent health monitor |
+| 9 | Main-agent router and government-scheme specialist with safe handoffs |
+
+Implementation for Days 1–9 is complete. Local unit validation passed for the
+available components; real voice, OCR, and telephony verification still requires
+the configured runtime, credentials, and controlled test inputs.
+
 ## Day 1 — Voice Agent
 
 Day 1 provides a basic real-time voice conversation:
