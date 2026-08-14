@@ -25,7 +25,7 @@ def test_prompt_has_financial_boundaries() -> None:
 
 
 def test_prompt_does_not_claim_unverified_data_or_languages() -> None:
-    assert "No financial-data tools are available yet" in SYSTEM_PROMPT
+    assert "Use only the implemented financial-data tools" in SYSTEM_PROMPT
     assert "runtime support is not verified" in SYSTEM_PROMPT
     assert "Use Devanagari for Hindi" in SYSTEM_PROMPT
 

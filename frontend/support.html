@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DhanBuddy Support Requests</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="brand"><a class="wordmark" href="/">DhanBuddy</a><span>Internal support</span></header>
+    <section class="voice-card" aria-labelledby="support-title">
+      <h1 id="support-title" style="font-size:2rem">Escalation requests</h1>
+      <p class="status-detail">Enter the internal support token to view sanitized requests.</p>
+      <div class="actions">
+        <input id="token" type="password" aria-label="Support token" autocomplete="off" />
+        <button id="load" class="button primary" type="button">Load requests</button>
+      </div>
+      <p id="message" role="status"></p>
+      <div style="overflow-x:auto">
+        <table id="requests" hidden style="width:100%;text-align:left;border-collapse:collapse">
+          <thead><tr><th>Reference</th><th>Issue</th><th>Urgency</th><th>Summary</th><th>Status</th><th>Created</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.querySelector('#load').addEventListener('click', async () => {
+      const token = document.querySelector('#token').value;
+      const message = document.querySelector('#message');
+      try {
+        const response = await fetch('/internal/api/escalations', {headers:{'x-support-token':token}});
+        if (!response.ok) throw new Error('Unable to load support requests.');
+        const rows = await response.json();
+        const body = document.querySelector('#requests tbody'); body.replaceChildren();
+        for (const row of rows) {
+          const tr = document.createElement('tr');
+          for (const key of ['reference_id','issue_type','urgency','summary','status','created_at']) {
+            const td = document.createElement('td'); td.textContent = row[key]; td.style.padding = '10px'; tr.appendChild(td);
+          }
+          body.appendChild(tr);
+        }
+        document.querySelector('#requests').hidden = false; message.textContent = `${rows.length} request(s).`;
+      } catch (error) { console.error(error); message.textContent = error.message; }
+    });
+  </script>
+</body>
+</html>

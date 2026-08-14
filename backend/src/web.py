@@ -1,5 +1,6 @@
 import os
 import re
+import secrets
 import uuid
 from pathlib import Path
 
@@ -11,6 +12,8 @@ from document_parser import parse_document
 from finance_data import correct_category, export_transactions, save_document
 from ocr import OCRUnavailableError, extract_text
 from upload_validation import MAX_UPLOAD_BYTES, validate_image
+from escalation import list_escalations, update_escalation_status
+from analytics import analytics_summary, health_snapshot
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env.local")
 
@@ -48,6 +51,60 @@ async def stylesheet() -> FileResponse:
 @app.get("/static/app.js", include_in_schema=False)
 async def javascript() -> FileResponse:
     return FileResponse(FRONTEND_DIR / "app.js", media_type="text/javascript")
+
+
+@app.get("/static/dashboard.js", include_in_schema=False)
+async def dashboard_javascript() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "dashboard.js", media_type="text/javascript")
+
+
+@app.get("/internal/support", include_in_schema=False)
+async def support_page() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "support.html")
+
+
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard_page() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "dashboard.html")
+
+
+@app.get("/api/analytics")
+async def call_analytics(
+    date_from: str | None = None, date_to: str | None = None,
+    language: str | None = None, channel: str | None = None,
+    outcome: str | None = None,
+) -> dict:
+    return analytics_summary(
+        date_from=date_from, date_to=date_to, language=language,
+        channel=channel, outcome=outcome,
+    )
+
+
+@app.get("/api/health")
+async def health() -> dict[str, object]:
+    configured = all(os.getenv(name) for name in ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"))
+    return health_snapshot(livekit_configured=configured)
+
+
+def require_support_token(request: Request) -> None:
+    expected = os.getenv("SUPPORT_VIEW_TOKEN", "")
+    supplied = request.headers.get("x-support-token", "")
+    if not expected or not secrets.compare_digest(expected, supplied):
+        raise HTTPException(status_code=401, detail="Support authorization required.")
+
+
+@app.get("/internal/api/escalations")
+async def support_escalations(request: Request) -> list[dict]:
+    require_support_token(request)
+    return list_escalations()
+
+
+@app.patch("/internal/api/escalations/{reference_id}")
+async def support_update(reference_id: str, status: str, request: Request) -> dict:
+    require_support_token(request)
+    if not update_escalation_status(reference_id, status):
+        raise HTTPException(status_code=404, detail="Escalation not found.")
+    return {"updated": True}
 
 
 @app.post("/api/token")

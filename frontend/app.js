@@ -158,3 +158,17 @@ ui.billInput.addEventListener("change", async () => {
 });
 window.addEventListener("pagehide", () => room?.disconnect());
 setAgentState(STATES.READY);
+
+async function refreshHealth() {
+  try {
+    const response = await fetch("/api/health"); if (!response.ok) throw new Error("Health unavailable");
+    const health = await response.json();
+    document.querySelector("#health-overall").textContent = `● ${health.status === "healthy" ? "Agent healthy" : "Agent unavailable"}`;
+    document.querySelector("#health-details").textContent = `Database ${health.database_status} · Agent ${health.agent_status} · LiveKit ${health.livekit_status}`;
+    document.querySelector("#health-activity").textContent = health.last_activity ? `Last activity ${new Date(health.last_activity).toLocaleString()}` : "No call activity yet";
+  } catch (error) {
+    console.error("Health check failed", error);
+    document.querySelector("#health-overall").textContent = "● Agent unavailable";
+  }
+}
+refreshHealth(); setInterval(refreshHealth, 10000);

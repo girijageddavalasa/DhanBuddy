@@ -3,5 +3,7 @@
 !.env.example
 .DS_Store
 backend/data/*.db*
+backend/data/tmp*/
 backend/data/uploads/
 backend/data/exports/
+backend/data/outbound_preferences.json

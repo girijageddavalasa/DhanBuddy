@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DhanBuddy Call Analytics</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><main class="shell">
+  <header class="brand"><a class="wordmark" href="/">DhanBuddy</a><span>Call analytics</span></header>
+  <section class="intro"><p class="eyebrow">Actual persisted call records</p><h1>Call analytics</h1><p class="lede">Operational outcomes without transcripts or financial details.</p></section>
+  <section class="filters" aria-label="Analytics filters">
+    <label>From <input id="from" type="date"></label><label>To <input id="to" type="date"></label>
+    <label>Language <input id="language" placeholder="All"></label>
+    <label>Channel <select id="channel"><option value="">All</option><option>browser</option><option>sip</option></select></label>
+    <label>Outcome <select id="outcome"><option value="">All</option><option>success</option><option>failure</option></select></label>
+    <button id="apply" class="button primary">Apply</button>
+  </section>
+  <section id="metrics" class="metric-grid" aria-label="Call metrics"></section>
+  <section class="dashboard-grid">
+    <article class="voice-card"><h2>Calls over time</h2><div id="time-bars" class="bars"></div></article>
+    <article class="voice-card"><h2>Success vs failure</h2><div id="outcome-bars" class="bars"></div></article>
+    <article class="voice-card"><h2>Languages</h2><div id="language-bars" class="bars"></div></article>
+    <article class="voice-card"><h2>Failure types</h2><div id="failure-bars" class="bars"></div></article>
+    <article class="voice-card"><h2>Channels</h2><div id="channel-bars" class="bars"></div></article>
+  </section>
+  <section class="history-card"><h2>Recent calls</h2><div class="table-scroll"><table><thead><tr><th>Time</th><th>Duration</th><th>Channel</th><th>Language</th><th>Outcome</th><th>Failure type</th></tr></thead><tbody id="history"></tbody></table></div></section>
+</main><script src="/static/dashboard.js"></script></body></html>
